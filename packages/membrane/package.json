@@ -1,0 +1,42 @@
+{
+  "name": "@tsyche/membrane",
+  "version": "0.1.0",
+  "description": "Composable operation pipelines for managing data at operation boundaries",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "test:cov": "jest --coverage",
+    "lint": "eslint src/ && tsc --noEmit",
+    "lint:fix": "eslint --fix src/",
+    "format": "prettier --check src/",
+    "format:fix": "prettier --write src/",
+    "clean": "rm -rf dist coverage"
+  },
+  "keywords": [
+    "enhancer",
+    "pipeline",
+    "composition",
+    "middleware",
+    "hooks",
+    "ddd",
+    "boundary"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
