@@ -1,6 +1,22 @@
 # @tsyche/membrane
 
-Composable operation pipelines for managing data at operation boundaries.
+Composable operation pipelines for managing data at
+operation boundaries. Membranes sit between your business
+logic and the outside world — enriching inputs, shaping
+outputs, and protecting domain aggregates without
+polluting the core data model.
+
+Each membrane wraps an async callback that transforms data
+according to a merge strategy (`overwrite`, `preserve`,
+`append`, or `passthrough`). Membranes compose into
+sequences, and a Permeator orchestrates the full
+input → callback → output pipeline. Ambient context
+(tenant, correlation ID, request metadata) threads through
+every step without mutation.
+
+Seven membrane types cover objects, arrays, scalars,
+projections, proxies, streams, and sequenced chains.
+All are stateless and async-first.
 
 ## Install
 
@@ -51,6 +67,8 @@ const result = await permeator.permeate({ userId: '123' }, async (scoped) => {
 ### ObjectMembrane
 
 Enriches base with callback-produced permeate data.
+Supports `overwrite`, `preserve`, and `passthrough`
+strategies.
 
 ```typescript
 // overwrite: callback result replaces base
@@ -74,7 +92,8 @@ await membrane.diffuse({ name: 'Alice' });
 
 ### CollectionMembrane
 
-Handles arrays with append or overwrite strategies.
+Handles arrays with `append`, `overwrite`, and
+`passthrough` strategies.
 
 ```typescript
 // append: concatenates callback result onto base
@@ -128,7 +147,8 @@ result.extra; // true (from permeate)
 ### ScalarMembrane
 
 Handles primitives (string, number, boolean). Callback
-produces the full replacement value.
+produces the full replacement value. Defaults to
+`passthrough` strategy.
 
 ```typescript
 const membrane = Membrane.scalar(async (base: string) => base.toUpperCase());
@@ -181,6 +201,9 @@ for await (const item of output) {
 
 Orchestrates a three-step pipeline:
 input.diffuse(base) → callback(permeate) → output.diffuse(result).
+When the input membrane has `strategy = 'passthrough'`,
+the Permeator returns the original base instead of the
+pipeline output.
 
 ```typescript
 const input = Membrane.object(
@@ -387,4 +410,4 @@ interface IPermeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
 
 ## License
 
-MIT
+BSD-3-Clause
