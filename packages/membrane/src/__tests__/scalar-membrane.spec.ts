@@ -25,18 +25,11 @@ describe('ScalarMembrane', () => {
     expect(result).toBe(false);
   });
 
-  it('should default strategy to passthrough', () => {
+  it('should accept a callback', () => {
     const callback = jest.fn(async (base: string) => base);
     const membrane = new ScalarMembrane(callback);
 
-    expect(membrane.strategy).toBe('passthrough');
-  });
-
-  it('should accept explicit strategy', () => {
-    const callback = jest.fn(async (base: string) => base);
-    const membrane = new ScalarMembrane(callback, 'append');
-
-    expect(membrane.strategy).toBe('append');
+    expect(membrane).toBeInstanceOf(ScalarMembrane);
   });
 
   describe('nullish resolution', () => {

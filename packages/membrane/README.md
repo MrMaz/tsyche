@@ -8,8 +8,8 @@ polluting the core data model.
 
 Each membrane wraps an async callback that transforms data
 according to a merge strategy (`overwrite`, `preserve`,
-`append`, or `passthrough`). Membranes compose into
-sequences, and a Permeator orchestrates the full
+or `append`). Membranes compose into sequences, and a
+Permeator orchestrates the full
 input → callback → output pipeline. Ambient context
 (tenant, correlation ID, request metadata) threads through
 every step without mutation.
@@ -69,8 +69,7 @@ const result = await permeator.permeate({ userId: '123' }, async (scoped) => {
 ### ObjectMembrane
 
 Enriches base with callback-produced permeate data.
-Supports `overwrite`, `preserve`, and `passthrough`
-strategies.
+Supports `overwrite` and `preserve` strategies.
 
 ```typescript
 // overwrite: callback result replaces base
@@ -95,8 +94,7 @@ await membrane.diffuse({ name: 'Alice' });
 
 ### CollectionMembrane
 
-Handles arrays with `append`, `overwrite`, and
-`passthrough` strategies.
+Handles arrays with `append` and `overwrite` strategies.
 
 ```typescript
 // append (default): concatenates callback result onto base
@@ -112,14 +110,17 @@ await membrane.diffuse([{ id: 1 }, { id: 2 }]);
 // => [{ id: 99 }]
 ```
 
-### ProjectionMembrane
+### ObjectProjectionMembrane
 
-Selects a subset from base (subtractive). Has a fixed
-`strategy = 'passthrough'`, so the Permeator passes the
-original base through unchanged.
+Subtractive membrane: merges base and permeate following
+strategy, then returns only keys present in permeate.
+Can subtract base keys and add new ones. Supports
+`overwrite` and `preserve` strategies.
 
 ```typescript
-const membrane = Membrane.projection(async (base) => ({
+// preserve (default): base values win on conflict,
+// only permeate keys returned
+const membrane = Membrane.objectProjection(async (base) => ({
   id: base.id,
   email: base.email,
 }));
@@ -130,6 +131,23 @@ await membrane.diffuse({
   password: 'hash',
 });
 // => { id: '1', email: 'alice@test.com' }
+```
+
+```typescript
+// overwrite: permeate values win on conflict
+const membrane = Membrane.objectProjection(
+  async (base) => ({
+    id: base.id,
+    email: base.email.toUpperCase(),
+  }),
+  'overwrite',
+);
+await membrane.diffuse({
+  id: '1',
+  name: 'Alice',
+  email: 'alice@test.com',
+});
+// => { id: '1', email: 'ALICE@TEST.COM' }
 ```
 
 ### ProxyMembrane
@@ -150,8 +168,7 @@ result.extra; // true (from permeate)
 ### ScalarMembrane
 
 Handles primitives (string, number, boolean). Callback
-produces the full replacement value. Defaults to
-`passthrough` strategy.
+produces the full replacement value.
 
 ```typescript
 const membrane = Membrane.scalar(async (base: string) => base.toUpperCase());
@@ -227,15 +244,15 @@ the null case.
 
 Each membrane type resolves to:
 
-| Membrane             | Nullish fallback             |
-| -------------------- | ---------------------------- |
-| `ObjectMembrane`     | `Object.create(null)` (`{}`) |
-| `CollectionMembrane` | `[]`                         |
-| `ProjectionMembrane` | `Object.create(null)` (`{}`) |
-| `ProxyMembrane`      | `Object.create(null)` (`{}`) |
-| `ScalarMembrane`     | `Object.create(null)`        |
-| `StreamMembrane`     | empty `AsyncIterable`        |
-| `SequenceMembrane`   | delegates to first membrane  |
+| Membrane                   | Nullish fallback             |
+| -------------------------- | ---------------------------- |
+| `ObjectMembrane`           | `Object.create(null)` (`{}`) |
+| `CollectionMembrane`       | `[]`                         |
+| `ObjectProjectionMembrane` | `Object.create(null)` (`{}`) |
+| `ProxyMembrane`            | `Object.create(null)` (`{}`) |
+| `ScalarMembrane`           | `Object.create(null)`        |
+| `StreamMembrane`           | empty `AsyncIterable`        |
+| `SequenceMembrane`         | delegates to first membrane  |
 
 ```typescript
 // Output membrane handles null from findOne()
@@ -263,8 +280,8 @@ membrane.nullish({ id: 1 }); // => { id: 1 }
 
 Orchestrates a three-step pipeline:
 input.diffuse(base) → callback(permeate) → output.diffuse(result).
-When the input membrane has `strategy = 'passthrough'`,
-the Permeator returns the original base instead of the
+When `strategy` is set to `'passthrough'` in the Permeator
+options, the original base is returned instead of the
 pipeline output.
 
 ```typescript
@@ -288,7 +305,8 @@ const result = await permeator.permeate({ name: 'input' }, async (scoped) => {
 
 ### Error Handling
 
-Pass an `onError` handler to normalize errors. It must throw.
+Pass an `onError` handler in the options to normalize
+errors. It must throw.
 
 ```typescript
 class DomainError extends Error {
@@ -297,8 +315,10 @@ class DomainError extends Error {
   }
 }
 
-const permeator = Membrane.permeate(input, output, (error) => {
-  throw new DomainError(error);
+const permeator = Membrane.permeate(input, output, {
+  onError: (error) => {
+    throw new DomainError(error);
+  },
 });
 
 await permeator.permeate({ name: 'input' }, async () => {
@@ -313,7 +333,8 @@ await permeator.permeate({ name: 'input' }, async () => {
 
 Enrich the scoped view with `tenantId` and `correlationId`
 from ambient context. The callback persists the enriched
-object, but the original aggregate is returned.
+object, but the Permeator's `passthrough` strategy returns
+the original aggregate.
 
 ```typescript
 const input = Membrane.object(
@@ -322,19 +343,18 @@ const input = Membrane.object(
     tenantId: ambient?.tenantId,
     correlationId: ambient?.correlationId,
   }),
-  'passthrough',
+  'overwrite',
 );
+const output = Membrane.object(async (base) => base, 'overwrite');
 
-// output is a no-op — passthrough returns original base
-const permeator = Membrane.permeate(
-  input,
-  Membrane.object(async (base) => base, 'overwrite'),
-);
+// passthrough returns original base from permeate()
+const permeator = Membrane.permeate(input, output, {
+  strategy: 'passthrough',
+});
 
 // domain aggregate (business data)
 const aggregate = { id: '1', name: 'Alice', total: 100 };
 
-// call permiation
 const result = await permeator.permeate(
   aggregate,
   async (scoped) => {
@@ -426,16 +446,16 @@ const result = await permeator.permeate({ take: 10 }, async () => [
 
 ### Factory Methods
 
-| Method                                       | Returns              | Strategies                                   | Default         |
-| -------------------------------------------- | -------------------- | -------------------------------------------- | --------------- |
-| `Membrane.object(callback, strategy?)`       | `ObjectMembrane`     | `'overwrite' \| 'preserve' \| 'passthrough'` | `'preserve'`    |
-| `Membrane.collection(callback, strategy?)`   | `CollectionMembrane` | `'overwrite' \| 'append' \| 'passthrough'`   | `'append'`      |
-| `Membrane.sequence(first, ...rest)`          | `SequenceMembrane`   |                                              |                 |
-| `Membrane.projection(callback)`              | `ProjectionMembrane` | `'passthrough'`                              | `'passthrough'` |
-| `Membrane.proxy(callback)`                   | `ProxyMembrane`      |                                              |                 |
-| `Membrane.scalar(callback, strategy?)`       | `ScalarMembrane`     | `'append' \| 'passthrough'`                  | `'passthrough'` |
-| `Membrane.stream(callback, strategy?)`       | `StreamMembrane`     | `'overwrite' \| 'preserve'`                  | `'preserve'`    |
-| `Membrane.permeate(input, output, onError?)` | `Permeator`          |                                              |                 |
+| Method                                           | Returns                    | Strategies                  | Default      |
+| ------------------------------------------------ | -------------------------- | --------------------------- | ------------ |
+| `Membrane.object(callback, strategy?)`           | `ObjectMembrane`           | `'overwrite' \| 'preserve'` | `'preserve'` |
+| `Membrane.collection(callback, strategy?)`       | `CollectionMembrane`       | `'overwrite' \| 'append'`   | `'append'`   |
+| `Membrane.objectProjection(callback, strategy?)` | `ObjectProjectionMembrane` | `'overwrite' \| 'preserve'` | `'preserve'` |
+| `Membrane.sequence(first, ...rest)`              | `SequenceMembrane`         |                             |              |
+| `Membrane.proxy(callback)`                       | `ProxyMembrane`            |                             |              |
+| `Membrane.scalar(callback)`                      | `ScalarMembrane`           |                             |              |
+| `Membrane.stream(callback, strategy?)`           | `StreamMembrane`           | `'overwrite' \| 'preserve'` | `'preserve'` |
+| `Membrane.permeate(input, output, options?)`     | `Permeator`                |                             |              |
 
 ### Types
 
@@ -445,10 +465,15 @@ type PermeateCallback<TPermeate, TAmbient> = <TBase>(
   ambient?: TAmbient,
 ) => Promise<TBase & TPermeate>;
 
-type ObjectMergeStrategy = 'overwrite' | 'preserve' | 'passthrough';
-type CollectionMergeStrategy = 'overwrite' | 'append' | 'passthrough';
-type ScalarMergeStrategy = 'append' | 'passthrough';
+type ObjectMergeStrategy = 'overwrite' | 'preserve';
+type CollectionMergeStrategy = 'overwrite' | 'append';
 type StreamMergeStrategy = 'overwrite' | 'preserve';
+type PermeatorStrategy = 'passthrough';
+
+interface PermeatorOptions {
+  strategy?: PermeatorStrategy;
+  onError?: MembraneErrorHandler;
+}
 
 type MembraneErrorHandler = (error: unknown) => never;
 type PlainLiteralObject = Record<string, unknown>;
@@ -458,7 +483,6 @@ type PlainLiteralObject = Record<string, unknown>;
 
 ```typescript
 interface IMembrane<TBase, TPermeate, TAmbient> {
-  readonly strategy?: string;
   nullish(value: TBase | null | undefined): TBase;
   diffuse(
     base: TBase | null | undefined,

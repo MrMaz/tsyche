@@ -10,11 +10,6 @@ export interface IMembrane<
   TAmbient extends PlainLiteralObject = PlainLiteralObject,
 > {
   /**
-   * When `'passthrough'`, Permeator returns original base instead of the output membrane result.
-   */
-  readonly strategy?: string;
-
-  /**
    * Resolves a nullish value to a type-appropriate empty base.
    * Called internally by `diffuse()` so every membrane handles
    * `null | undefined` transparently.

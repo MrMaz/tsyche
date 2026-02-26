@@ -5,7 +5,7 @@ export { Membrane } from './membrane';
 export { Permeator } from './permeator';
 export { CollectionMembrane } from './membranes/collection-membrane';
 export { ObjectMembrane } from './membranes/object-membrane';
-export { ProjectionMembrane } from './membranes/projection-membrane';
+export { ObjectProjectionMembrane } from './membranes/object-projection-membrane';
 export { ProxyMembrane } from './membranes/proxy-membrane';
 export { ScalarMembrane } from './membranes/scalar-membrane';
 export { SequenceMembrane } from './membranes/sequence-membrane';
@@ -16,9 +16,10 @@ export type {
   PlainLiteralObject,
   PermeateCallback,
   MembraneErrorHandler,
+  PermeatorStrategy,
+  PermeatorOptions,
   CollectionMergeStrategy,
   ObjectMergeStrategy,
-  ScalarMergeStrategy,
   StreamMergeStrategy,
 } from './membrane.types';
 export type { IMembrane } from './interfaces/membrane.interface';

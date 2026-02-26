@@ -36,17 +36,6 @@ describe('CollectionMembrane', () => {
     });
   });
 
-  describe('passthrough strategy', () => {
-    it('should return callback result from diffuse', async () => {
-      const callback = cb(async () => [{ id: 99 }]);
-
-      const membrane = new CollectionMembrane(callback, 'passthrough');
-      const result = await membrane.diffuse([{ id: 1 }, { id: 2 }]);
-
-      expect(result).toEqual([{ id: 99 }]);
-    });
-  });
-
   describe('default strategy', () => {
     it('should default to append', async () => {
       const callback = cb(async () => [{ id: 3 }]);

@@ -2,14 +2,13 @@ import {
   PlainLiteralObject,
   IMembrane,
   IPermeator,
-  MembraneErrorHandler,
+  PermeatorOptions,
 } from './membrane.types';
 
 /**
  * Three-step pipeline:
  * input.diffuse(base) → callback(permeate) → output.diffuse(result).
- * When the input membrane has strategy `'passthrough'`,
- * returns the original base instead.
+ * When strategy is `'passthrough'`, returns the original base instead.
  */
 export class Permeator<
   TInput,
@@ -21,7 +20,7 @@ export class Permeator<
   constructor(
     private readonly input: IMembrane<TInput, TPermeateIn, TAmbient>,
     private readonly output: IMembrane<TOutput, TPermeateOut, TAmbient>,
-    private readonly onError?: MembraneErrorHandler,
+    private readonly options?: PermeatorOptions,
   ) {}
 
   async permeate(
@@ -36,13 +35,13 @@ export class Permeator<
       const callbackResult = await callback(permeate);
       const final = await this.output.diffuse(callbackResult, ambient);
 
-      if (this.input.strategy === 'passthrough') {
+      if (this.options?.strategy === 'passthrough') {
         return base;
       }
 
       return final;
     } catch (error) {
-      if (this.onError) this.onError(error);
+      if (this.options?.onError) this.options.onError(error);
       throw error;
     }
   }

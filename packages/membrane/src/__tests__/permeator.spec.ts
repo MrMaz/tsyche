@@ -1,7 +1,7 @@
 import { PermeateCallback } from '../membrane.types';
 import { CollectionMembrane } from '../membranes/collection-membrane';
 import { ObjectMembrane } from '../membranes/object-membrane';
-import { ProjectionMembrane } from '../membranes/projection-membrane';
+import { ObjectProjectionMembrane } from '../membranes/object-projection-membrane';
 import { ScalarMembrane } from '../membranes/scalar-membrane';
 import { SequenceMembrane } from '../membranes/sequence-membrane';
 import { Permeator } from '../permeator';
@@ -50,7 +50,7 @@ describe('Permeator', () => {
 
   describe('domain aggregate protection', () => {
     it('should hide sensitive fields from callback via projection', async () => {
-      const before = new ProjectionMembrane(
+      const before = new ObjectProjectionMembrane(
         cb(async (base: any) => ({
           id: base.id,
           name: base.name,
@@ -62,7 +62,9 @@ describe('Permeator', () => {
         'overwrite',
       );
 
-      const composed = new Permeator(before, after);
+      const composed = new Permeator(before, after, {
+        strategy: 'passthrough',
+      });
       const aggregate = {
         id: '1',
         name: 'Alice',
@@ -174,7 +176,7 @@ describe('Permeator', () => {
         throw new CustomError(error);
       };
 
-      const composed = new Permeator(before, after, onError);
+      const composed = new Permeator(before, after, { onError });
 
       await expect(
         composed.permeate({ name: 'input' }, async (scoped) => scoped),
@@ -196,7 +198,7 @@ describe('Permeator', () => {
         throw error;
       });
 
-      const composed = new Permeator(before, after, onError);
+      const composed = new Permeator(before, after, { onError });
 
       await expect(
         composed.permeate({ name: 'input' }, async () => {
@@ -229,17 +231,19 @@ describe('Permeator', () => {
   });
 
   describe('passthrough strategy', () => {
-    it('should return original base for object passthrough', async () => {
+    it('should return original base for object permeator', async () => {
       const before = new ObjectMembrane(
         cb(async (base: any) => ({ ...base, added: true })),
-        'passthrough',
+        'overwrite',
       );
       const after = new ObjectMembrane(
         cb(async (base: any) => base),
         'overwrite',
       );
 
-      const composed = new Permeator(before, after);
+      const composed = new Permeator(before, after, {
+        strategy: 'passthrough',
+      });
       const original = { name: 'Alice' };
 
       const result = await composed.permeate(original, async (scoped: any) => {
@@ -250,17 +254,19 @@ describe('Permeator', () => {
       expect(result).toBe(original);
     });
 
-    it('should return original base for collection passthrough', async () => {
+    it('should return original base for collection permeator', async () => {
       const before = new CollectionMembrane(
         cb(async () => [{ id: 99 }]),
-        'passthrough',
+        'overwrite',
       );
       const after = new CollectionMembrane(
         cb(async (base: any) => base),
         'overwrite',
       );
 
-      const composed = new Permeator(before, after);
+      const composed = new Permeator(before, after, {
+        strategy: 'passthrough',
+      });
       const original = [{ id: 1 }, { id: 2 }];
 
       const result = await composed.permeate(original, async (scoped: any) => {
@@ -273,14 +279,15 @@ describe('Permeator', () => {
   });
 
   describe('scalar permeation', () => {
-    it('should return original for string passthrough strategy', async () => {
-      const before = new ScalarMembrane(
-        async (base: string) => base.toUpperCase(),
-        'passthrough',
+    it('should return original for string passthrough', async () => {
+      const before = new ScalarMembrane(async (base: string) =>
+        base.toUpperCase(),
       );
       const after = new ScalarMembrane(async (base: string) => base);
 
-      const composed = new Permeator(before, after);
+      const composed = new Permeator(before, after, {
+        strategy: 'passthrough',
+      });
 
       const result = await composed.permeate('hello', async (scoped: any) => {
         expect(scoped).toBe('HELLO');
@@ -290,14 +297,13 @@ describe('Permeator', () => {
       expect(result).toBe('hello');
     });
 
-    it('should return original for number passthrough strategy', async () => {
-      const before = new ScalarMembrane(
-        async (base: number) => base * 2,
-        'passthrough',
-      );
+    it('should return original for number passthrough', async () => {
+      const before = new ScalarMembrane(async (base: number) => base * 2);
       const after = new ScalarMembrane(async (base: number) => base);
 
-      const composed = new Permeator(before, after);
+      const composed = new Permeator(before, after, {
+        strategy: 'passthrough',
+      });
 
       const result = await composed.permeate(42, async (scoped: any) => {
         expect(scoped).toBe(84);
@@ -307,10 +313,9 @@ describe('Permeator', () => {
       expect(result).toBe(42);
     });
 
-    it('should return pipeline result for append strategy', async () => {
+    it('should return pipeline result without passthrough', async () => {
       const before = new ScalarMembrane(
         async (base: string) => `${base}-suffix`,
-        'append',
       );
       const after = new ScalarMembrane(async (base: string) => base);
 

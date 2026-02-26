@@ -18,23 +18,28 @@ export type PermeateCallback<
 
 /**
  * `overwrite`: callback result replaces base;
- * `preserve`: base fields take precedence;
- * `passthrough`: original base passes through unchanged.
+ * `preserve`: base fields take precedence.
  */
-export type ObjectMergeStrategy = 'overwrite' | 'preserve' | 'passthrough';
+export type ObjectMergeStrategy = 'overwrite' | 'preserve';
 
 /**
  * `overwrite`: replaces array;
- * `append`: concatenates [...base, ...permeate];
- * `passthrough`: original base passes through unchanged.
+ * `append`: concatenates [...base, ...permeate].
  */
-export type CollectionMergeStrategy = 'overwrite' | 'append' | 'passthrough';
+export type CollectionMergeStrategy = 'overwrite' | 'append';
 
 /**
- * `passthrough`: original base passes through unchanged (default);
- * `append`: reserved for future use.
+ * `passthrough`: Permeator returns original base instead of pipeline output.
  */
-export type ScalarMergeStrategy = 'append' | 'passthrough';
+export type PermeatorStrategy = 'passthrough';
+
+/**
+ * Options for configuring a Permeator.
+ */
+export interface PermeatorOptions {
+  strategy?: PermeatorStrategy;
+  onError?: MembraneErrorHandler;
+}
 
 /**
  * `overwrite`: permeate wins on conflict per chunk;

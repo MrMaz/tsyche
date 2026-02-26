@@ -2,15 +2,14 @@ import {
   PlainLiteralObject,
   IMembrane,
   PermeateCallback,
-  MembraneErrorHandler,
+  PermeatorOptions,
   CollectionMergeStrategy,
   ObjectMergeStrategy,
-  ScalarMergeStrategy,
   StreamMergeStrategy,
 } from './membrane.types';
 import { CollectionMembrane } from './membranes/collection-membrane';
 import { ObjectMembrane } from './membranes/object-membrane';
-import { ProjectionMembrane } from './membranes/projection-membrane';
+import { ObjectProjectionMembrane } from './membranes/object-projection-membrane';
 import { ProxyMembrane } from './membranes/proxy-membrane';
 import { ScalarMembrane } from './membranes/scalar-membrane';
 import { SequenceMembrane } from './membranes/sequence-membrane';
@@ -63,16 +62,18 @@ export class Membrane {
   }
 
   /**
-   * Creates a ProjectionMembrane that selects a subset from base (subtractive).
+   * Creates an ObjectProjectionMembrane that merges base and permeate,
+   * then returns only keys present in permeate (subtractive).
    */
-  static projection<
+  static objectProjection<
     TBase extends object,
     TPermeate = unknown,
     TAmbient extends PlainLiteralObject = PlainLiteralObject,
   >(
     callback: PermeateCallback<TPermeate, TAmbient>,
-  ): ProjectionMembrane<TBase, TPermeate, TAmbient> {
-    return new ProjectionMembrane(callback);
+    strategy?: ObjectMergeStrategy,
+  ): ObjectProjectionMembrane<TBase, TPermeate, TAmbient> {
+    return new ObjectProjectionMembrane(callback, strategy);
   }
 
   /**
@@ -97,9 +98,8 @@ export class Membrane {
     TAmbient extends PlainLiteralObject = PlainLiteralObject,
   >(
     callback: (base: TBase, ambient?: TAmbient) => Promise<TPermeate>,
-    strategy?: ScalarMergeStrategy,
   ): ScalarMembrane<TBase, TPermeate, TAmbient> {
-    return new ScalarMembrane(callback, strategy);
+    return new ScalarMembrane(callback);
   }
 
   /**
@@ -128,8 +128,8 @@ export class Membrane {
   >(
     input: IMembrane<TInput, TPermeateIn, TAmbient>,
     output: IMembrane<TOutput, TPermeateOut, TAmbient>,
-    onError?: MembraneErrorHandler,
+    options?: PermeatorOptions,
   ): Permeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
-    return new Permeator(input, output, onError);
+    return new Permeator(input, output, options);
   }
 }

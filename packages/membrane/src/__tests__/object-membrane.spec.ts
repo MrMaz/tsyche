@@ -54,20 +54,6 @@ describe('ObjectMembrane', () => {
     });
   });
 
-  describe('passthrough strategy', () => {
-    it('should return callback result from diffuse', async () => {
-      const callback = cb(async (base: any) => ({
-        ...base,
-        added: true,
-      }));
-
-      const membrane = new ObjectMembrane(callback, 'passthrough');
-      const result = await membrane.diffuse({ name: 'Alice' });
-
-      expect(result).toEqual({ name: 'Alice', added: true });
-    });
-  });
-
   describe('default strategy', () => {
     it('should default to preserve', async () => {
       const callback = cb(async (base: any) => ({

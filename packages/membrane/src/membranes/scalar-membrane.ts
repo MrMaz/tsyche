@@ -1,8 +1,4 @@
-import {
-  PlainLiteralObject,
-  IMembrane,
-  ScalarMergeStrategy,
-} from '../membrane.types';
+import { PlainLiteralObject, IMembrane } from '../membrane.types';
 
 /**
  * Primitive membrane for string, number, or boolean values.
@@ -18,7 +14,6 @@ export class ScalarMembrane<
       base: TBase,
       ambient?: TAmbient,
     ) => Promise<TPermeate>,
-    public readonly strategy: ScalarMergeStrategy = 'passthrough',
   ) {}
 
   nullish(value: TBase | null | undefined): TBase {

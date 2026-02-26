@@ -2,7 +2,7 @@ import { Membrane } from '../membrane';
 import { PermeateCallback } from '../membrane.types';
 import { CollectionMembrane } from '../membranes/collection-membrane';
 import { ObjectMembrane } from '../membranes/object-membrane';
-import { ProjectionMembrane } from '../membranes/projection-membrane';
+import { ObjectProjectionMembrane } from '../membranes/object-projection-membrane';
 import { ProxyMembrane } from '../membranes/proxy-membrane';
 import { ScalarMembrane } from '../membranes/scalar-membrane';
 import { SequenceMembrane } from '../membranes/sequence-membrane';
@@ -83,17 +83,17 @@ describe('Membrane factory', () => {
     });
   });
 
-  describe('.projection()', () => {
-    it('should return a ProjectionMembrane instance', () => {
-      const membrane = Membrane.projection(
+  describe('.objectProjection()', () => {
+    it('should return an ObjectProjectionMembrane instance', () => {
+      const membrane = Membrane.objectProjection(
         cb(async (base: any) => ({ id: base.id })),
       );
 
-      expect(membrane).toBeInstanceOf(ProjectionMembrane);
+      expect(membrane).toBeInstanceOf(ObjectProjectionMembrane);
     });
 
     it('should diffuse correctly', async () => {
-      const membrane = Membrane.projection(
+      const membrane = Membrane.objectProjection(
         cb(async (base: any) => ({ id: base.id })),
       );
       const result = await membrane.diffuse({
