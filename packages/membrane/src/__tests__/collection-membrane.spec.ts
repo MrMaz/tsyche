@@ -6,33 +6,96 @@ const cb = (fn: (...args: any[]) => any) =>
 
 describe('CollectionMembrane', () => {
   describe('overwrite strategy', () => {
-    it('should replace array entirely with callback return', async () => {
-      const callback = cb(async () => [{ id: 3 }]);
+    it('should replace base at each index with permeate', async () => {
+      const callback = cb(async () => [{ id: 10 }, { id: 20 }]);
 
       const membrane = new CollectionMembrane(callback, 'overwrite');
-      const result = await membrane.diffuse([{ id: 1 }, { id: 2 }]);
+      const result = await membrane.diffuse([{ id: 1 }, { id: 2 }, { id: 3 }]);
 
-      expect(result).toEqual([{ id: 3 }]);
+      expect(result).toEqual([{ id: 10 }, { id: 20 }, { id: 3 }]);
+    });
+
+    it('should extend result when permeate is longer than base', async () => {
+      const callback = cb(async () => [{ id: 10 }, { id: 20 }, { id: 30 }]);
+
+      const membrane = new CollectionMembrane(callback, 'overwrite');
+      const result = await membrane.diffuse([{ id: 1 }]);
+
+      expect(result).toEqual([{ id: 10 }, { id: 20 }, { id: 30 }]);
+    });
+
+    it('should fill remaining from base when permeate is shorter', async () => {
+      const callback = cb(async () => [{ id: 10 }]);
+
+      const membrane = new CollectionMembrane(callback, 'overwrite');
+      const result = await membrane.diffuse([{ id: 1 }, { id: 2 }, { id: 3 }]);
+
+      expect(result).toEqual([{ id: 10 }, { id: 2 }, { id: 3 }]);
+    });
+
+    it('should handle sparse permeate array', async () => {
+      // eslint-disable-next-line no-sparse-arrays
+      const callback = cb(async () => [, 'b', ,]);
+
+      const membrane = new CollectionMembrane(callback, 'overwrite');
+      const result = await membrane.diffuse(['a', 'x', 'c']);
+
+      expect(result[0]).toBe('a');
+      expect(result[1]).toBe('b');
+      expect(result[2]).toBe('c');
+    });
+
+    it('should handle sparse base array', async () => {
+      const callback = cb(async () => ['x', 'y', 'z']);
+
+      const membrane = new CollectionMembrane(callback, 'overwrite');
+      // eslint-disable-next-line no-sparse-arrays
+      const result = await membrane.diffuse(['a', , 'c']);
+
+      expect(result).toEqual(['x', 'y', 'z']);
+    });
+  });
+
+  describe('preserve strategy', () => {
+    it('should keep base at each index over permeate', async () => {
+      const callback = cb(async () => [{ id: 10 }, { id: 20 }]);
+
+      const membrane = new CollectionMembrane(callback, 'preserve');
+      const result = await membrane.diffuse([{ id: 1 }, { id: 2 }, { id: 3 }]);
+
+      expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    });
+
+    it('should fill remaining from permeate when base is shorter', async () => {
+      const callback = cb(async () => [{ id: 10 }, { id: 20 }, { id: 30 }]);
+
+      const membrane = new CollectionMembrane(callback, 'preserve');
+      const result = await membrane.diffuse([{ id: 1 }]);
+
+      expect(result).toEqual([{ id: 1 }, { id: 20 }, { id: 30 }]);
+    });
+
+    it('should handle sparse base array by filling from permeate', async () => {
+      const callback = cb(async () => ['x', 'y', 'z']);
+
+      const membrane = new CollectionMembrane(callback, 'preserve');
+      // eslint-disable-next-line no-sparse-arrays
+      const result = await membrane.diffuse(['a', , 'c']);
+
+      expect(result[0]).toBe('a');
+      expect(result[1]).toBe('y');
+      expect(result[2]).toBe('c');
     });
   });
 
   describe('append strategy', () => {
-    it('should append callback-returned items onto original array', async () => {
+    it('should concatenate permeate onto base', async () => {
       const callback = cb(async () => [{ id: 3 }]);
 
       const membrane = new CollectionMembrane(callback, 'append');
       const result = await membrane.diffuse([{ id: 1 }, { id: 2 }]);
 
       expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
-    });
-
-    it('should fall back to overwrite for non-array base', async () => {
-      const callback = cb(async () => 'replaced');
-
-      const membrane = new CollectionMembrane(callback, 'append');
-      const result = await membrane.diffuse('not-an-array' as any);
-
-      expect(result).toBe('replaced');
     });
   });
 

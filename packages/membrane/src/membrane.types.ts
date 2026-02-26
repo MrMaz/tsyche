@@ -23,10 +23,11 @@ export type PermeateCallback<
 export type ObjectMergeStrategy = 'overwrite' | 'preserve';
 
 /**
- * `overwrite`: replaces array;
+ * `overwrite`: permeate wins at each index, base fills remaining;
+ * `preserve`: base wins at each index, permeate fills remaining;
  * `append`: concatenates [...base, ...permeate].
  */
-export type CollectionMergeStrategy = 'overwrite' | 'append';
+export type CollectionMergeStrategy = 'overwrite' | 'preserve' | 'append';
 
 /**
  * `passthrough`: Permeator returns original base instead of pipeline output.

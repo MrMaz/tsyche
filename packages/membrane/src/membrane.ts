@@ -35,7 +35,7 @@ export class Membrane {
   }
 
   /**
-   * Creates a CollectionMembrane for array data with append or overwrite strategy.
+   * Creates a CollectionMembrane for array data with overwrite, preserve, or append strategy.
    */
   static collection<
     TItem,

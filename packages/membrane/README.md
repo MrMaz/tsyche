@@ -94,7 +94,8 @@ await membrane.diffuse({ name: 'Alice' });
 
 ### CollectionMembrane
 
-Handles arrays with `append` and `overwrite` strategies.
+Handles arrays with index-based merge strategies. Supports
+`overwrite`, `preserve`, and `append`.
 
 ```typescript
 // append (default): concatenates callback result onto base
@@ -104,10 +105,20 @@ await membrane.diffuse([{ id: 1 }, { id: 2 }]);
 ```
 
 ```typescript
-// overwrite: replaces base array entirely
-const membrane = Membrane.collection(async () => [{ id: 99 }], 'overwrite');
-await membrane.diffuse([{ id: 1 }, { id: 2 }]);
-// => [{ id: 99 }]
+// overwrite: permeate wins at each index, base fills remaining
+const membrane = Membrane.collection(async () => [{ id: 10 }], 'overwrite');
+await membrane.diffuse([{ id: 1 }, { id: 2 }, { id: 3 }]);
+// => [{ id: 10 }, { id: 2 }, { id: 3 }]
+```
+
+```typescript
+// preserve: base wins at each index, permeate fills remaining
+const membrane = Membrane.collection(
+  async () => [{ id: 10 }, { id: 20 }, { id: 30 }],
+  'preserve',
+);
+await membrane.diffuse([{ id: 1 }]);
+// => [{ id: 1 }, { id: 20 }, { id: 30 }]
 ```
 
 ### ObjectProjectionMembrane
@@ -446,16 +457,16 @@ const result = await permeator.permeate({ take: 10 }, async () => [
 
 ### Factory Methods
 
-| Method                                           | Returns                    | Strategies                  | Default      |
-| ------------------------------------------------ | -------------------------- | --------------------------- | ------------ |
-| `Membrane.object(callback, strategy?)`           | `ObjectMembrane`           | `'overwrite' \| 'preserve'` | `'preserve'` |
-| `Membrane.collection(callback, strategy?)`       | `CollectionMembrane`       | `'overwrite' \| 'append'`   | `'append'`   |
-| `Membrane.objectProjection(callback, strategy?)` | `ObjectProjectionMembrane` | `'overwrite' \| 'preserve'` | `'preserve'` |
-| `Membrane.sequence(first, ...rest)`              | `SequenceMembrane`         |                             |              |
-| `Membrane.proxy(callback)`                       | `ProxyMembrane`            |                             |              |
-| `Membrane.scalar(callback)`                      | `ScalarMembrane`           |                             |              |
-| `Membrane.stream(callback, strategy?)`           | `StreamMembrane`           | `'overwrite' \| 'preserve'` | `'preserve'` |
-| `Membrane.permeate(input, output, options?)`     | `Permeator`                |                             |              |
+| Method                                           | Returns                    | Strategies                              | Default      |
+| ------------------------------------------------ | -------------------------- | --------------------------------------- | ------------ |
+| `Membrane.object(callback, strategy?)`           | `ObjectMembrane`           | `'overwrite' \| 'preserve'`             | `'preserve'` |
+| `Membrane.collection(callback, strategy?)`       | `CollectionMembrane`       | `'overwrite' \| 'preserve' \| 'append'` | `'append'`   |
+| `Membrane.objectProjection(callback, strategy?)` | `ObjectProjectionMembrane` | `'overwrite' \| 'preserve'`             | `'preserve'` |
+| `Membrane.sequence(first, ...rest)`              | `SequenceMembrane`         |                                         |              |
+| `Membrane.proxy(callback)`                       | `ProxyMembrane`            |                                         |              |
+| `Membrane.scalar(callback)`                      | `ScalarMembrane`           |                                         |              |
+| `Membrane.stream(callback, strategy?)`           | `StreamMembrane`           | `'overwrite' \| 'preserve'`             | `'preserve'` |
+| `Membrane.permeate(input, output, options?)`     | `Permeator`                |                                         |              |
 
 ### Types
 
@@ -466,7 +477,7 @@ type PermeateCallback<TPermeate, TAmbient> = <TBase>(
 ) => Promise<TBase & TPermeate>;
 
 type ObjectMergeStrategy = 'overwrite' | 'preserve';
-type CollectionMergeStrategy = 'overwrite' | 'append';
+type CollectionMergeStrategy = 'overwrite' | 'preserve' | 'append';
 type StreamMergeStrategy = 'overwrite' | 'preserve';
 type PermeatorStrategy = 'passthrough';
 

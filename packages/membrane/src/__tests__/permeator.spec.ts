@@ -270,7 +270,7 @@ describe('Permeator', () => {
       const original = [{ id: 1 }, { id: 2 }];
 
       const result = await composed.permeate(original, async (scoped: any) => {
-        expect(scoped).toEqual([{ id: 99 }]);
+        expect(scoped).toEqual([{ id: 99 }, { id: 2 }]);
         return scoped;
       });
 

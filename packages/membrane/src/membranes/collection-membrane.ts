@@ -7,8 +7,9 @@ import {
 
 /**
  * Array membrane.
- * `append` concatenates [...base, ...permeate];
- * `overwrite` replaces the array.
+ * `overwrite`: permeate wins at each index, base fills remaining;
+ * `preserve`: base wins at each index, permeate fills remaining;
+ * `append`: concatenates [...base, ...permeate].
  */
 export class CollectionMembrane<
   TItem,
@@ -31,10 +32,29 @@ export class CollectionMembrane<
     const resolved = this.nullish(base);
     const permeate = await this.callback(resolved, ambient);
 
-    if (this.strategy === 'append' && Array.isArray(resolved)) {
+    if (this.strategy === 'append') {
       return [...resolved, ...permeate];
     }
 
-    return permeate;
+    const maxLen = Math.max(resolved.length, permeate.length);
+    const result: TItem[] = new Array(maxLen);
+
+    for (let i = 0; i < maxLen; i++) {
+      if (this.strategy === 'overwrite') {
+        if (i in permeate) {
+          result[i] = permeate[i];
+        } else if (i in resolved) {
+          result[i] = resolved[i];
+        }
+      } else {
+        if (i in resolved) {
+          result[i] = resolved[i];
+        } else if (i in permeate) {
+          result[i] = permeate[i];
+        }
+      }
+    }
+
+    return result;
   }
 }
