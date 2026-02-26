@@ -6,6 +6,7 @@ import {
   CollectionMergeStrategy,
   ObjectMergeStrategy,
   ScalarMergeStrategy,
+  StreamMergeStrategy,
 } from './membrane.types';
 import { CollectionMembrane } from './membranes/collection-membrane';
 import { ObjectMembrane } from './membranes/object-membrane';
@@ -29,7 +30,7 @@ export class Membrane {
     TAmbient extends PlainLiteralObject = PlainLiteralObject,
   >(
     callback: PermeateCallback<TPermeate, TAmbient>,
-    strategy: ObjectMergeStrategy,
+    strategy?: ObjectMergeStrategy,
   ): ObjectMembrane<TBase, TPermeate, TAmbient> {
     return new ObjectMembrane(callback, strategy);
   }
@@ -42,7 +43,7 @@ export class Membrane {
     TAmbient extends PlainLiteralObject = PlainLiteralObject,
   >(
     callback: PermeateCallback<unknown, TAmbient>,
-    strategy: CollectionMergeStrategy,
+    strategy?: CollectionMergeStrategy,
   ): CollectionMembrane<TItem, TAmbient> {
     return new CollectionMembrane(callback, strategy);
   }
@@ -110,8 +111,9 @@ export class Membrane {
     TAmbient extends PlainLiteralObject = PlainLiteralObject,
   >(
     callback: PermeateCallback<TPermeate, TAmbient>,
+    strategy?: StreamMergeStrategy,
   ): StreamMembrane<TItem, TPermeate, TAmbient> {
-    return new StreamMembrane(callback);
+    return new StreamMembrane(callback, strategy);
   }
 
   /**

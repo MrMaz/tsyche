@@ -107,11 +107,12 @@ await membrane.diffuse({ name: 'Alice' });
 ```
 
 ```typescript
-// preserve: base fields win on conflict
-const membrane = Membrane.object(
-  async (base) => ({ ...base, name: 'ignored', extra: true }),
-  'preserve',
-);
+// preserve (default): base fields win on conflict
+const membrane = Membrane.object(async (base) => ({
+  ...base,
+  name: 'ignored',
+  extra: true,
+}));
 await membrane.diffuse({ name: 'Alice' });
 // => { name: 'Alice', extra: true }
 ```
@@ -122,8 +123,8 @@ Handles arrays with `append`, `overwrite`, and
 `passthrough` strategies.
 
 ```typescript
-// append: concatenates callback result onto base
-const membrane = Membrane.collection(async () => [{ id: 3 }], 'append');
+// append (default): concatenates callback result onto base
+const membrane = Membrane.collection(async () => [{ id: 3 }]);
 await membrane.diffuse([{ id: 1 }, { id: 2 }]);
 // => [{ id: 1 }, { id: 2 }, { id: 3 }]
 ```
@@ -205,10 +206,16 @@ await seq.diffuse({ name: 'test' });
 ### StreamMembrane
 
 Processes each chunk of an AsyncIterable through the
-callback individually. Chunk properties win on conflict.
+callback individually. Supports `overwrite` and `preserve`
+strategies on a per-chunk basis.
 
 ```typescript
-const membrane = Membrane.stream(async (chunk) => ({ ...chunk, extra: true }));
+// preserve (default): chunk properties win on conflict
+const membrane = Membrane.stream(async (chunk) => ({
+  ...chunk,
+  extra: true,
+  id: 999,
+}));
 
 async function* source() {
   yield { id: 1 };
@@ -221,6 +228,15 @@ for await (const item of output) {
 }
 // { id: 1, extra: true }
 // { id: 2, extra: true }
+```
+
+```typescript
+// overwrite: permeate wins on conflict
+const membrane = Membrane.stream(
+  async (chunk) => ({ ...chunk, id: 999 }),
+  'overwrite',
+);
+// chunks { id: 1 }, { id: 2 } => { id: 999 }, { id: 999 }
 ```
 
 ## Permeator
@@ -390,16 +406,16 @@ const result = await permeator.permeate({ take: 10 }, async () => [
 
 ### Factory Methods
 
-| Method                                       | Returns              | Parameters                                             |
-| -------------------------------------------- | -------------------- | ------------------------------------------------------ |
-| `Membrane.object(callback, strategy)`        | `ObjectMembrane`     | strategy: `'overwrite' \| 'preserve' \| 'passthrough'` |
-| `Membrane.collection(callback, strategy)`    | `CollectionMembrane` | strategy: `'overwrite' \| 'append' \| 'passthrough'`   |
-| `Membrane.sequence(first, ...rest)`          | `SequenceMembrane`   | variadic membranes                                     |
-| `Membrane.projection(callback)`              | `ProjectionMembrane` | fixed strategy `'passthrough'`                         |
-| `Membrane.proxy(callback)`                   | `ProxyMembrane`      |                                                        |
-| `Membrane.scalar(callback, strategy?)`       | `ScalarMembrane`     | strategy defaults to `'passthrough'`                   |
-| `Membrane.stream(callback)`                  | `StreamMembrane`     |                                                        |
-| `Membrane.permeate(input, output, onError?)` | `Permeator`          |                                                        |
+| Method                                       | Returns              | Strategies                                   | Default         |
+| -------------------------------------------- | -------------------- | -------------------------------------------- | --------------- |
+| `Membrane.object(callback, strategy?)`       | `ObjectMembrane`     | `'overwrite' \| 'preserve' \| 'passthrough'` | `'preserve'`    |
+| `Membrane.collection(callback, strategy?)`   | `CollectionMembrane` | `'overwrite' \| 'append' \| 'passthrough'`   | `'append'`      |
+| `Membrane.sequence(first, ...rest)`          | `SequenceMembrane`   |                                              |                 |
+| `Membrane.projection(callback)`              | `ProjectionMembrane` | `'passthrough'`                              | `'passthrough'` |
+| `Membrane.proxy(callback)`                   | `ProxyMembrane`      |                                              |                 |
+| `Membrane.scalar(callback, strategy?)`       | `ScalarMembrane`     | `'append' \| 'passthrough'`                  | `'passthrough'` |
+| `Membrane.stream(callback, strategy?)`       | `StreamMembrane`     | `'overwrite' \| 'preserve'`                  | `'preserve'`    |
+| `Membrane.permeate(input, output, onError?)` | `Permeator`          |                                              |                 |
 
 ### Types
 
@@ -412,6 +428,7 @@ type PermeateCallback<TPermeate, TAmbient> = <TBase>(
 type ObjectMergeStrategy = 'overwrite' | 'preserve' | 'passthrough';
 type CollectionMergeStrategy = 'overwrite' | 'append' | 'passthrough';
 type ScalarMergeStrategy = 'append' | 'passthrough';
+type StreamMergeStrategy = 'overwrite' | 'preserve';
 
 type MembraneErrorHandler = (error: unknown) => never;
 type PlainLiteralObject = Record<string, unknown>;

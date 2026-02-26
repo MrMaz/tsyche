@@ -19,64 +19,112 @@ async function collect<T>(iter: AsyncIterable<T>): Promise<T[]> {
 }
 
 describe('StreamMembrane', () => {
-  it('should transform each chunk through the callback', async () => {
-    const callback = cb(async (chunk: any) => ({
-      ...chunk,
-      processed: true,
-    }));
+  describe('preserve strategy', () => {
+    it('should transform each chunk through the callback', async () => {
+      const callback = cb(async (chunk: any) => ({
+        ...chunk,
+        processed: true,
+      }));
 
-    const membrane = new StreamMembrane(callback);
-    const input = toAsync([{ id: 1 }, { id: 2 }, { id: 3 }]);
-    const output = await membrane.diffuse(input);
-    const result = await collect(output);
+      const membrane = new StreamMembrane(callback, 'preserve');
+      const input = toAsync([{ id: 1 }, { id: 2 }, { id: 3 }]);
+      const output = await membrane.diffuse(input);
+      const result = await collect(output);
 
-    expect(result).toEqual([
-      { id: 1, processed: true },
-      { id: 2, processed: true },
-      { id: 3, processed: true },
-    ]);
+      expect(result).toEqual([
+        { id: 1, processed: true },
+        { id: 2, processed: true },
+        { id: 3, processed: true },
+      ]);
+    });
+
+    it('should preserve chunk values over permeate on conflict', async () => {
+      const callback = cb(async (chunk: any) => ({
+        ...chunk,
+        id: 999,
+        extra: true,
+      }));
+
+      const membrane = new StreamMembrane(callback, 'preserve');
+      const input = toAsync([{ id: 1 }, { id: 2 }]);
+      const output = await membrane.diffuse(input);
+      const result = await collect(output);
+
+      expect(result).toEqual([
+        { id: 1, extra: true },
+        { id: 2, extra: true },
+      ]);
+    });
+
+    it('should handle empty async iterables', async () => {
+      const callback = cb(async (chunk: any) => chunk);
+
+      const membrane = new StreamMembrane(callback, 'preserve');
+      const input = toAsync([]);
+      const output = await membrane.diffuse(input);
+      const result = await collect(output);
+
+      expect(result).toEqual([]);
+      expect(callback).not.toHaveBeenCalled();
+    });
   });
 
-  it('should preserve base chunk values over permeate', async () => {
-    const callback = cb(async (chunk: any) => ({
-      ...chunk,
-      id: 999,
-      extra: true,
-    }));
+  describe('overwrite strategy', () => {
+    it('should transform each chunk through the callback', async () => {
+      const callback = cb(async (chunk: any) => ({
+        ...chunk,
+        processed: true,
+      }));
 
-    const membrane = new StreamMembrane(callback);
-    const input = toAsync([{ id: 1 }, { id: 2 }]);
-    const output = await membrane.diffuse(input);
-    const result = await collect(output);
+      const membrane = new StreamMembrane(callback, 'overwrite');
+      const input = toAsync([{ id: 1 }, { id: 2 }, { id: 3 }]);
+      const output = await membrane.diffuse(input);
+      const result = await collect(output);
 
-    expect(result).toEqual([
-      { id: 1, extra: true },
-      { id: 2, extra: true },
-    ]);
-  });
+      expect(result).toEqual([
+        { id: 1, processed: true },
+        { id: 2, processed: true },
+        { id: 3, processed: true },
+      ]);
+    });
 
-  it('should handle empty async iterables', async () => {
-    const callback = cb(async (chunk: any) => chunk);
+    it('should let permeate win over chunk on conflict', async () => {
+      const callback = cb(async () => ({
+        id: 999,
+        extra: true,
+      }));
 
-    const membrane = new StreamMembrane(callback);
-    const input = toAsync([]);
-    const output = await membrane.diffuse(input);
-    const result = await collect(output);
+      const membrane = new StreamMembrane(callback, 'overwrite');
+      const input = toAsync([{ id: 1 }, { id: 2 }]);
+      const output = await membrane.diffuse(input);
+      const result = await collect(output);
 
-    expect(result).toEqual([]);
-    expect(callback).not.toHaveBeenCalled();
+      expect(result).toEqual([
+        { id: 999, extra: true },
+        { id: 999, extra: true },
+      ]);
+    });
+
+    it('should handle empty async iterables', async () => {
+      const callback = cb(async (chunk: any) => chunk);
+
+      const membrane = new StreamMembrane(callback, 'overwrite');
+      const input = toAsync([]);
+      const output = await membrane.diffuse(input);
+      const result = await collect(output);
+
+      expect(result).toEqual([]);
+      expect(callback).not.toHaveBeenCalled();
+    });
   });
 
   describe('ambient threading', () => {
     it('should pass ambient to callback for each chunk', async () => {
       const callback = cb(async (chunk: any) => chunk);
 
-      const membrane = new StreamMembrane(callback);
+      const membrane = new StreamMembrane(callback, 'preserve');
       const ambient = { tenant: 'acme' };
       const input = toAsync([{ id: 1 }, { id: 2 }]);
-      await membrane.diffuse(input, ambient);
-
-      // Callback is invoked lazily per chunk, so we need to consume the stream
       const output = await membrane.diffuse(input, ambient);
       await collect(output);
 

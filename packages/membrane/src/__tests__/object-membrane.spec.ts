@@ -68,6 +68,22 @@ describe('ObjectMembrane', () => {
     });
   });
 
+  describe('default strategy', () => {
+    it('should default to preserve', async () => {
+      const callback = cb(async (base: any) => ({
+        ...base,
+        name: 'should-not-win',
+        extra: true,
+      }));
+
+      const membrane = new ObjectMembrane(callback);
+      const result = await membrane.diffuse({ name: 'original' });
+
+      expect(membrane.strategy).toBe('preserve');
+      expect(result).toEqual({ name: 'original', extra: true });
+    });
+  });
+
   describe('ambient threading', () => {
     it('should pass ambient to callback when provided', async () => {
       const callback = cb(async (base: any) => base);

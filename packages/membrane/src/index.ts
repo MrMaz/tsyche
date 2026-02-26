@@ -19,6 +19,7 @@ export type {
   CollectionMergeStrategy,
   ObjectMergeStrategy,
   ScalarMergeStrategy,
+  StreamMergeStrategy,
 } from './membrane.types';
 export type { IMembrane } from './interfaces/membrane.interface';
 export type { IPermeator } from './interfaces/permeator.interface';

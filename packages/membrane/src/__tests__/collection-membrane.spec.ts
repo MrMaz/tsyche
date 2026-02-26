@@ -47,6 +47,18 @@ describe('CollectionMembrane', () => {
     });
   });
 
+  describe('default strategy', () => {
+    it('should default to append', async () => {
+      const callback = cb(async () => [{ id: 3 }]);
+
+      const membrane = new CollectionMembrane(callback);
+      const result = await membrane.diffuse([{ id: 1 }, { id: 2 }]);
+
+      expect(membrane.strategy).toBe('append');
+      expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    });
+  });
+
   describe('ambient threading', () => {
     it('should pass ambient to callback when provided', async () => {
       const callback = cb(async (base: any) => base);

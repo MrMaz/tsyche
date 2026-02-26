@@ -16,7 +16,7 @@ export class CollectionMembrane<
 > implements IMembrane<TItem[], unknown, TAmbient> {
   constructor(
     private readonly callback: PermeateCallback<unknown, TAmbient>,
-    public readonly strategy: CollectionMergeStrategy,
+    public readonly strategy: CollectionMergeStrategy = 'append',
   ) {}
 
   async diffuse(base: TItem[], ambient?: TAmbient): Promise<TItem[]> {

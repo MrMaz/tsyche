@@ -16,7 +16,7 @@ export class ObjectMembrane<
 > implements IMembrane<TBase, TPermeate, TAmbient> {
   constructor(
     private readonly callback: PermeateCallback<TPermeate, TAmbient>,
-    public readonly strategy: ObjectMergeStrategy,
+    public readonly strategy: ObjectMergeStrategy = 'preserve',
   ) {}
 
   async diffuse(base: TBase, ambient?: TAmbient): Promise<TBase & TPermeate> {

@@ -37,6 +37,12 @@ export type CollectionMergeStrategy = 'overwrite' | 'append' | 'passthrough';
 export type ScalarMergeStrategy = 'append' | 'passthrough';
 
 /**
+ * `overwrite`: permeate wins on conflict per chunk;
+ * `preserve`: chunk wins on conflict (base preserved).
+ */
+export type StreamMergeStrategy = 'overwrite' | 'preserve';
+
+/**
  * Error handler for permeated membranes. Must throw (return type `never`).
  * Receives the original error; can normalize it to a domain-specific exception.
  */
