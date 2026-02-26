@@ -50,6 +50,36 @@ describe('ProjectionMembrane', () => {
     });
   });
 
+  describe('nullish resolution', () => {
+    it('should resolve null base to empty object', async () => {
+      const callback = cb(async (base: any) => ({
+        id: base.id ?? 'default',
+      }));
+
+      const membrane = new ProjectionMembrane(callback);
+      const result = await membrane.diffuse(null);
+
+      expect(result).toEqual({ id: 'default' });
+    });
+
+    it('should resolve undefined base to empty object', async () => {
+      const callback = cb(async (base: any) => ({
+        id: base.id ?? 'default',
+      }));
+
+      const membrane = new ProjectionMembrane(callback);
+      const result = await membrane.diffuse(undefined);
+
+      expect(result).toEqual({ id: 'default' });
+    });
+
+    it('should pass non-null base through unchanged', () => {
+      const membrane = new ProjectionMembrane(cb(async (base: any) => base));
+
+      expect(membrane.nullish({ id: '1' })).toEqual({ id: '1' });
+    });
+  });
+
   describe('ambient threading', () => {
     it('should pass ambient to callback', async () => {
       const callback = cb(async (base: any) => ({ id: base.id }));

@@ -21,7 +21,16 @@ export class ScalarMembrane<
     public readonly strategy: ScalarMergeStrategy = 'passthrough',
   ) {}
 
-  async diffuse(base: TBase, ambient?: TAmbient): Promise<TBase & TPermeate> {
-    return await this.callback(base, ambient);
+  nullish(value: TBase | null | undefined): TBase {
+    if (value !== null && value !== undefined) return value;
+    return Object.create(null);
+  }
+
+  async diffuse(
+    base: TBase | null | undefined,
+    ambient?: TAmbient,
+  ): Promise<TBase & TPermeate> {
+    const resolved = this.nullish(base);
+    return await this.callback(resolved, ambient);
   }
 }

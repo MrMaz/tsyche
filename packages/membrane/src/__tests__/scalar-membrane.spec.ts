@@ -39,6 +39,31 @@ describe('ScalarMembrane', () => {
     expect(membrane.strategy).toBe('append');
   });
 
+  describe('nullish resolution', () => {
+    it('should resolve null base and let callback handle it', async () => {
+      const callback = jest.fn(async () => 'fallback');
+      const membrane = new ScalarMembrane(callback);
+      const result = await membrane.diffuse(null);
+
+      expect(result).toBe('fallback');
+    });
+
+    it('should resolve undefined base and let callback handle it', async () => {
+      const callback = jest.fn(async () => 42);
+      const membrane = new ScalarMembrane(callback);
+      const result = await membrane.diffuse(undefined);
+
+      expect(result).toBe(42);
+    });
+
+    it('should pass non-null base through unchanged', () => {
+      const callback = jest.fn(async (base: string) => base);
+      const membrane = new ScalarMembrane(callback);
+
+      expect(membrane.nullish('hello')).toBe('hello');
+    });
+  });
+
   describe('ambient threading', () => {
     it('should pass ambient to callback', async () => {
       const callback = jest.fn(async (base: string) => base);

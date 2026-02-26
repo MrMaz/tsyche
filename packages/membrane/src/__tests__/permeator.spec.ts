@@ -345,6 +345,43 @@ describe('Permeator', () => {
     });
   });
 
+  describe('nullish callback result', () => {
+    it('should handle null callback result via output membrane nullish resolution', async () => {
+      const before = new ObjectMembrane(
+        cb(async (base: any) => base),
+        'overwrite',
+      );
+      const after = new ObjectMembrane(
+        cb(async (base: any) => ({ ...base, postProcessed: true })),
+        'overwrite',
+      );
+
+      const composed = new Permeator(before, after);
+      const result = await composed.permeate({ id: '1' }, async () => null);
+
+      expect(result).toEqual({ postProcessed: true });
+    });
+
+    it('should handle undefined callback result via output membrane nullish resolution', async () => {
+      const before = new ObjectMembrane(
+        cb(async (base: any) => base),
+        'overwrite',
+      );
+      const after = new ObjectMembrane(
+        cb(async (base: any) => ({ ...base, postProcessed: true })),
+        'overwrite',
+      );
+
+      const composed = new Permeator(before, after);
+      const result = await composed.permeate(
+        { id: '1' },
+        async () => undefined,
+      );
+
+      expect(result).toEqual({ postProcessed: true });
+    });
+  });
+
   describe('ambient threading', () => {
     it('should thread ambient through before and after', async () => {
       const beforeCb = cb(async (base: any) => base);

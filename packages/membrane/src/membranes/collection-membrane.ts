@@ -19,11 +19,20 @@ export class CollectionMembrane<
     public readonly strategy: CollectionMergeStrategy = 'append',
   ) {}
 
-  async diffuse(base: TItem[], ambient?: TAmbient): Promise<TItem[]> {
-    const permeate = await this.callback(base, ambient);
+  nullish(value: TItem[] | null | undefined): TItem[] {
+    if (value !== null && value !== undefined) return value;
+    return [];
+  }
 
-    if (this.strategy === 'append' && Array.isArray(base)) {
-      return [...base, ...permeate];
+  async diffuse(
+    base: TItem[] | null | undefined,
+    ambient?: TAmbient,
+  ): Promise<TItem[]> {
+    const resolved = this.nullish(base);
+    const permeate = await this.callback(resolved, ambient);
+
+    if (this.strategy === 'append' && Array.isArray(resolved)) {
+      return [...resolved, ...permeate];
     }
 
     return permeate;

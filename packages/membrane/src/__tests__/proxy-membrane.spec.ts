@@ -54,6 +54,32 @@ describe('ProxyMembrane', () => {
     expect('missing' in result).toBe(false);
   });
 
+  describe('nullish resolution', () => {
+    it('should resolve null base to empty object', async () => {
+      const callback = cb(async () => ({ extra: true }));
+
+      const membrane = new ProxyMembrane(callback);
+      const result = await membrane.diffuse(null);
+
+      expect((result as any).extra).toBe(true);
+    });
+
+    it('should resolve undefined base to empty object', async () => {
+      const callback = cb(async () => ({ extra: true }));
+
+      const membrane = new ProxyMembrane(callback);
+      const result = await membrane.diffuse(undefined);
+
+      expect((result as any).extra).toBe(true);
+    });
+
+    it('should pass non-null base through unchanged', () => {
+      const membrane = new ProxyMembrane(cb(async (base: any) => base));
+
+      expect(membrane.nullish({ name: 'test' })).toEqual({ name: 'test' });
+    });
+  });
+
   describe('ambient threading', () => {
     it('should pass ambient to callback', async () => {
       const callback = cb(async (base: any) => base);

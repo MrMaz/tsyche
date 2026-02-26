@@ -118,6 +118,38 @@ describe('StreamMembrane', () => {
     });
   });
 
+  describe('nullish resolution', () => {
+    it('should resolve null base to empty async iterable', async () => {
+      const callback = cb(async (chunk: any) => chunk);
+
+      const membrane = new StreamMembrane(callback, 'preserve');
+      const output = await membrane.diffuse(null);
+      const result = await collect(output);
+
+      expect(result).toEqual([]);
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('should resolve undefined base to empty async iterable', async () => {
+      const callback = cb(async (chunk: any) => chunk);
+
+      const membrane = new StreamMembrane(callback, 'preserve');
+      const output = await membrane.diffuse(undefined);
+      const result = await collect(output);
+
+      expect(result).toEqual([]);
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('should pass non-null base through unchanged', async () => {
+      const membrane = new StreamMembrane(cb(async (chunk: any) => chunk));
+      const input = toAsync([{ id: 1 }]);
+      const resolved = membrane.nullish(input);
+
+      expect(resolved).toBe(input);
+    });
+  });
+
   describe('ambient threading', () => {
     it('should pass ambient to callback for each chunk', async () => {
       const callback = cb(async (chunk: any) => chunk);

@@ -26,7 +26,9 @@ export class Permeator<
 
   async permeate(
     base: TInput,
-    callback: (permeate: TInput & TPermeateIn) => Promise<TOutput>,
+    callback: (
+      permeate: TInput & TPermeateIn,
+    ) => Promise<TOutput | null | undefined>,
     ambient?: TAmbient,
   ): Promise<(TOutput & TPermeateOut) | TInput> {
     try {

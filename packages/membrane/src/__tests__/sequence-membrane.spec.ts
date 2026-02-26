@@ -35,6 +35,32 @@ describe('SequenceMembrane', () => {
     expect(result).toEqual({ name: 'test', first: true, second: true });
   });
 
+  describe('nullish resolution', () => {
+    it('should delegate nullish to first membrane', () => {
+      const first = new ObjectMembrane(
+        cb(async (base: any) => base),
+        'overwrite',
+      );
+
+      const seq = new SequenceMembrane(first, []);
+      const result = seq.nullish(null);
+
+      expect(result).toEqual(Object.create(null));
+    });
+
+    it('should resolve null base through first membrane in diffuse', async () => {
+      const first = new ObjectMembrane(
+        cb(async (base: any) => ({ ...base, step: 1 })),
+        'overwrite',
+      );
+
+      const seq = new SequenceMembrane(first, []);
+      const result = await seq.diffuse(null);
+
+      expect(result).toEqual({ step: 1 });
+    });
+  });
+
   it('should thread ambient through all membranes', async () => {
     const cb1 = cb(async (base: any) => base);
     const cb2 = cb(async (base: any) => base);

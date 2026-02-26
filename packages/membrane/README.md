@@ -239,6 +239,50 @@ const membrane = Membrane.stream(
 // chunks { id: 1 }, { id: 2 } => { id: 999 }, { id: 999 }
 ```
 
+## Nullish Resolution
+
+Every membrane resolves `null` and `undefined` base values
+transparently. When `diffuse()` receives a nullish base,
+the membrane converts it to a type-appropriate empty value
+before processing. This is especially useful when a
+Permeator callback returns `Entity | null` (e.g. from a
+`findOne()` call) and the output membrane needs to handle
+the null case.
+
+Each membrane type resolves to:
+
+| Membrane             | Nullish fallback             |
+| -------------------- | ---------------------------- |
+| `ObjectMembrane`     | `Object.create(null)` (`{}`) |
+| `CollectionMembrane` | `[]`                         |
+| `ProjectionMembrane` | `Object.create(null)` (`{}`) |
+| `ProxyMembrane`      | `Object.create(null)` (`{}`) |
+| `ScalarMembrane`     | `Object.create(null)`        |
+| `StreamMembrane`     | empty `AsyncIterable`        |
+| `SequenceMembrane`   | delegates to first membrane  |
+
+```typescript
+// Output membrane handles null from findOne()
+const output = Membrane.object(
+  async (base) => ({ ...base, loaded: true }),
+  'overwrite',
+);
+
+// null base resolves to {} before the callback runs
+await output.diffuse(null);
+// => { loaded: true }
+```
+
+You can also call `nullish()` directly to pre-resolve a
+value without diffusing:
+
+```typescript
+const membrane = Membrane.object(async (base) => base);
+membrane.nullish(null); // => {}
+membrane.nullish(undefined); // => {}
+membrane.nullish({ id: 1 }); // => { id: 1 }
+```
+
 ## Permeator
 
 Orchestrates a three-step pipeline:
@@ -439,13 +483,19 @@ type PlainLiteralObject = Record<string, unknown>;
 ```typescript
 interface IMembrane<TBase, TPermeate, TAmbient> {
   readonly strategy?: string;
-  diffuse(base: TBase, ambient?: TAmbient): Promise<TBase & TPermeate>;
+  nullish(value: TBase | null | undefined): TBase;
+  diffuse(
+    base: TBase | null | undefined,
+    ambient?: TAmbient,
+  ): Promise<TBase & TPermeate>;
 }
 
 interface IPermeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
   permeate(
     base: TInput,
-    callback: (permeate: TInput & TPermeateIn) => Promise<TOutput>,
+    callback: (
+      permeate: TInput & TPermeateIn,
+    ) => Promise<TOutput | null | undefined>,
     ambient?: TAmbient,
   ): Promise<(TOutput & TPermeateOut) | TInput>;
 }

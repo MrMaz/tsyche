@@ -19,14 +19,23 @@ export class ObjectMembrane<
     public readonly strategy: ObjectMergeStrategy = 'preserve',
   ) {}
 
-  async diffuse(base: TBase, ambient?: TAmbient): Promise<TBase & TPermeate> {
-    const permeate = await this.callback(base, ambient);
+  nullish(value: TBase | null | undefined): TBase {
+    if (value !== null && value !== undefined) return value;
+    return Object.create(null);
+  }
+
+  async diffuse(
+    base: TBase | null | undefined,
+    ambient?: TAmbient,
+  ): Promise<TBase & TPermeate> {
+    const resolved = this.nullish(base);
+    const permeate = await this.callback(resolved, ambient);
 
     if (this.strategy === 'preserve') {
       return Object.assign(
-        Object.create(Object.getPrototypeOf(base)),
+        Object.create(Object.getPrototypeOf(resolved)),
         permeate,
-        base,
+        resolved,
       );
     }
 

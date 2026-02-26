@@ -59,6 +59,41 @@ describe('CollectionMembrane', () => {
     });
   });
 
+  describe('nullish resolution', () => {
+    it('should resolve null base to empty array', async () => {
+      const callback = cb(async () => [{ id: 1 }]);
+
+      const membrane = new CollectionMembrane(callback, 'append');
+      const result = await membrane.diffuse(null);
+
+      expect(result).toEqual([{ id: 1 }]);
+    });
+
+    it('should resolve undefined base to empty array', async () => {
+      const callback = cb(async () => [{ id: 1 }]);
+
+      const membrane = new CollectionMembrane(callback, 'append');
+      const result = await membrane.diffuse(undefined);
+
+      expect(result).toEqual([{ id: 1 }]);
+    });
+
+    it('should pass non-null base through unchanged', () => {
+      const membrane = new CollectionMembrane(cb(async (base: any) => base));
+
+      expect(membrane.nullish([1, 2])).toEqual([1, 2]);
+    });
+
+    it('should overwrite null base with callback result', async () => {
+      const callback = cb(async () => [{ id: 99 }]);
+
+      const membrane = new CollectionMembrane(callback, 'overwrite');
+      const result = await membrane.diffuse(null);
+
+      expect(result).toEqual([{ id: 99 }]);
+    });
+  });
+
   describe('ambient threading', () => {
     it('should pass ambient to callback when provided', async () => {
       const callback = cb(async (base: any) => base);

@@ -84,6 +84,53 @@ describe('ObjectMembrane', () => {
     });
   });
 
+  describe('nullish resolution', () => {
+    it('should resolve null base to empty object', async () => {
+      const callback = cb(async (base: any) => ({
+        ...base,
+        filled: true,
+      }));
+
+      const membrane = new ObjectMembrane(callback, 'overwrite');
+      const result = await membrane.diffuse(null);
+
+      expect(result).toEqual({ filled: true });
+    });
+
+    it('should resolve undefined base to empty object', async () => {
+      const callback = cb(async (base: any) => ({
+        ...base,
+        filled: true,
+      }));
+
+      const membrane = new ObjectMembrane(callback, 'overwrite');
+      const result = await membrane.diffuse(undefined);
+
+      expect(result).toEqual({ filled: true });
+    });
+
+    it('should pass non-null base through unchanged', () => {
+      const membrane = new ObjectMembrane(
+        cb(async (base: any) => base),
+        'overwrite',
+      );
+
+      expect(membrane.nullish({ name: 'Alice' })).toEqual({ name: 'Alice' });
+    });
+
+    it('should work with preserve strategy on null base', async () => {
+      const callback = cb(async (base: any) => ({
+        ...base,
+        extra: true,
+      }));
+
+      const membrane = new ObjectMembrane(callback, 'preserve');
+      const result = await membrane.diffuse(null);
+
+      expect(result).toEqual({ extra: true });
+    });
+  });
+
   describe('ambient threading', () => {
     it('should pass ambient to callback when provided', async () => {
       const callback = cb(async (base: any) => base);

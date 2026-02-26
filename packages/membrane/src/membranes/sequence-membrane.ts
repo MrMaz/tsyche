@@ -14,7 +14,14 @@ export class SequenceMembrane<
     private readonly rest: IMembrane<TBase, TPermeate, TAmbient>[],
   ) {}
 
-  async diffuse(base: TBase, ambient?: TAmbient): Promise<TBase & TPermeate> {
+  nullish(value: TBase | null | undefined): TBase {
+    return this.first.nullish(value);
+  }
+
+  async diffuse(
+    base: TBase | null | undefined,
+    ambient?: TAmbient,
+  ): Promise<TBase & TPermeate> {
     let result = await this.first.diffuse(base, ambient);
     for (const membrane of this.rest) {
       result = await membrane.diffuse(result, ambient);

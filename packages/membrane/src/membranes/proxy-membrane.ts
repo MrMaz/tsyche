@@ -17,18 +17,27 @@ export class ProxyMembrane<
     private readonly callback: PermeateCallback<TPermeate, TAmbient>,
   ) {}
 
-  async diffuse(base: TBase, ambient?: TAmbient): Promise<TBase & TPermeate> {
-    const permeate = await this.callback(base, ambient);
+  nullish(value: TBase | null | undefined): TBase {
+    if (value !== null && value !== undefined) return value;
+    return Object.create(null);
+  }
+
+  async diffuse(
+    base: TBase | null | undefined,
+    ambient?: TAmbient,
+  ): Promise<TBase & TPermeate> {
+    const resolved = this.nullish(base);
+    const permeate = await this.callback(resolved, ambient);
 
     return new Proxy(permeate, {
       get(target, prop, receiver) {
         if (Reflect.has(target, prop)) {
           return Reflect.get(target, prop, receiver);
         }
-        return Reflect.get(base, prop, receiver);
+        return Reflect.get(resolved, prop, receiver);
       },
       has(target, prop) {
-        return Reflect.has(target, prop) || Reflect.has(base, prop);
+        return Reflect.has(target, prop) || Reflect.has(resolved, prop);
       },
     });
   }
