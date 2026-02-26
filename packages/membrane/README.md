@@ -18,6 +18,32 @@ Seven membrane types cover objects, arrays, scalars,
 projections, proxies, streams, and sequenced chains.
 All are stateless and async-first.
 
+```mermaid
+flowchart LR
+    base["base"] --> diffuseIn["input.diffuse(base, ambient)"]
+    diffuseIn --> permeate["permeate"]
+    permeate --> callback["callback(permeate)"]
+    callback --> result["result"]
+    result --> diffuseOut["output.diffuse(result, ambient)"]
+    diffuseOut --> final["final result"]
+
+    permeate -- "passthrough?" --> returnBase["return base"]
+
+    ambient["ambient"] -. "threads through every step" .-> diffuseIn
+    ambient -. " " .-> callback
+    ambient -. " " .-> diffuseOut
+
+    subgraph Permeator
+        diffuseIn
+        permeate
+        callback
+        result
+        diffuseOut
+        final
+        returnBase
+    end
+```
+
 ## Install
 
 ```bash
