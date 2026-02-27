@@ -18,7 +18,7 @@ Seven membrane types cover objects, arrays, scalars,
 projections, proxies, streams, and sequenced chains.
 All are stateless and async-first.
 
-![Permeator sequence diagram](https://raw.githubusercontent.com/MrMaz/tsyche/v0.6.0/packages/membrane/assets/sequence-diagram.png)
+![Permeator sequence diagram](https://raw.githubusercontent.com/MrMaz/tsyche/v0.7.0/packages/membrane/assets/sequence-diagram.png)
 
 ## Install
 

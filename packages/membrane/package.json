@@ -1,6 +1,6 @@
 {
   "name": "@tsyche/membrane",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Composable operation pipelines for managing data at operation boundaries",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
