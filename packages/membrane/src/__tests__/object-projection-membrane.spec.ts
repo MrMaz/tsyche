@@ -1,7 +1,7 @@
+import { ImmutablePermeator } from '../immutable-permeator';
 import { PermeateCallback } from '../membrane.types';
 import { ObjectMembrane } from '../membranes/object-membrane';
 import { ObjectProjectionMembrane } from '../membranes/object-projection-membrane';
-import { Permeator } from '../permeator';
 
 const cb = (fn: (...args: any[]) => any) =>
   jest.fn(fn) as unknown as jest.Mock & PermeateCallback;
@@ -107,9 +107,7 @@ describe('ObjectProjectionMembrane', () => {
         'overwrite',
       );
 
-      const composed = new Permeator(before, after, {
-        strategy: 'passthrough',
-      });
+      const composed = new ImmutablePermeator(before, after);
       const original = { id: '1', name: 'John', email: 'j@test.com' };
 
       const result = await composed.permeate(original, async (scoped: any) => {

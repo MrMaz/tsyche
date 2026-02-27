@@ -46,7 +46,7 @@ const output = Membrane.object(
 );
 
 // Wire them into a permeator
-const permeator = Membrane.permeate(input, output);
+const permeator = Membrane.mutable(input, output);
 
 const result = await permeator.permeate({ userId: '123' }, async (scoped) => {
   // scoped has { userId: '123', timestamp: ... }
@@ -291,9 +291,11 @@ membrane.nullish({ id: 1 }); // => { id: 1 }
 
 Orchestrates a three-step pipeline:
 input.diffuse(base) → callback(permeate) → output.diffuse(result).
-When `strategy` is set to `'passthrough'` in the Permeator
-options, the original base is returned instead of the
-pipeline output.
+
+Use `Membrane.mutable()` when the pipeline output replaces
+the original base. Use `Membrane.immutable()` when the
+pipeline runs for side-effects and the original base is
+returned unchanged.
 
 ```typescript
 const input = Membrane.object(
@@ -305,7 +307,7 @@ const output = Membrane.object(
   'overwrite',
 );
 
-const permeator = Membrane.permeate(input, output);
+const permeator = Membrane.mutable(input, output);
 
 const result = await permeator.permeate({ name: 'input' }, async (scoped) => {
   // scoped = { name: 'input', enriched: true }
@@ -326,7 +328,7 @@ class DomainError extends Error {
   }
 }
 
-const permeator = Membrane.permeate(input, output, {
+const permeator = Membrane.mutable(input, output, {
   onError: (error) => {
     throw new DomainError(error);
   },
@@ -344,8 +346,8 @@ await permeator.permeate({ name: 'input' }, async () => {
 
 Enrich the scoped view with `tenantId` and `correlationId`
 from ambient context. The callback persists the enriched
-object, but the Permeator's `passthrough` strategy returns
-the original aggregate.
+object, but the `ImmutablePermeator` returns the original
+aggregate unchanged.
 
 ```typescript
 const input = Membrane.object(
@@ -358,10 +360,8 @@ const input = Membrane.object(
 );
 const output = Membrane.object(async (base) => base, 'overwrite');
 
-// passthrough returns original base from permeate()
-const permeator = Membrane.permeate(input, output, {
-  strategy: 'passthrough',
-});
+// immutable returns original base from permeate()
+const permeator = Membrane.immutable(input, output);
 
 // domain aggregate (business data)
 const aggregate = { id: '1', name: 'Alice', total: 100 };
@@ -400,7 +400,7 @@ const output = Membrane.object(
   'overwrite',
 );
 
-const permeator = Membrane.permeate(input, output);
+const permeator = Membrane.mutable(input, output);
 
 const result = await permeator.permeate({ name: 'input' }, async (scoped) => {
   // scoped = { name: 'input', validated: true, normalized: true }
@@ -424,7 +424,7 @@ const input = Membrane.object(
 );
 const output = Membrane.object(async (base) => base, 'overwrite');
 
-const permeator = Membrane.permeate(input, output);
+const permeator = Membrane.mutable(input, output);
 
 const result = await permeator.permeate(
   { name: 'input' },
@@ -444,7 +444,7 @@ CollectionMembrane handles the output.
 const input = Membrane.object(async (base) => base, 'overwrite');
 const output = Membrane.collection(async (base) => base, 'overwrite');
 
-const permeator = Membrane.permeate(input, output);
+const permeator = Membrane.mutable(input, output);
 
 const result = await permeator.permeate({ take: 10 }, async () => [
   { id: 1 },
@@ -466,23 +466,22 @@ const result = await permeator.permeate({ take: 10 }, async () => [
 | `Membrane.proxy(callback)`                       | `ProxyMembrane`            |                                         |              |
 | `Membrane.scalar(callback)`                      | `ScalarMembrane`           |                                         |              |
 | `Membrane.stream(callback, strategy?)`           | `StreamMembrane`           | `'overwrite' \| 'preserve'`             | `'preserve'` |
-| `Membrane.permeate(input, output, options?)`     | `Permeator`                |                                         |              |
+| `Membrane.mutable(input, output, options?)`      | `Permeator`                |                                         |              |
+| `Membrane.immutable(input, output, options?)`    | `ImmutablePermeator`       |                                         |              |
 
 ### Types
 
 ```typescript
-type PermeateCallback<TPermeate, TAmbient> = <TBase>(
-  base: TBase,
-  ambient?: TAmbient,
-) => Promise<TBase & TPermeate>;
+type PermeateCallback<
+  TPermeate = unknown,
+  TAmbient extends PlainLiteralObject = PlainLiteralObject,
+> = <TBase>(base: TBase, ambient?: TAmbient) => Promise<TBase & TPermeate>;
 
 type ObjectMergeStrategy = 'overwrite' | 'preserve';
 type CollectionMergeStrategy = 'overwrite' | 'preserve' | 'append';
 type StreamMergeStrategy = 'overwrite' | 'preserve';
-type PermeatorStrategy = 'passthrough';
 
 interface PermeatorOptions {
-  strategy?: PermeatorStrategy;
   onError?: MembraneErrorHandler;
 }
 
@@ -493,7 +492,11 @@ type PlainLiteralObject = Record<string, unknown>;
 ### Interfaces
 
 ```typescript
-interface IMembrane<TBase, TPermeate, TAmbient> {
+interface IMembrane<
+  TBase,
+  TPermeate = unknown,
+  TAmbient extends PlainLiteralObject = PlainLiteralObject,
+> {
   nullish(value: TBase | null | undefined): TBase;
   diffuse(
     base: TBase | null | undefined,
@@ -501,14 +504,20 @@ interface IMembrane<TBase, TPermeate, TAmbient> {
   ): Promise<TBase & TPermeate>;
 }
 
-interface IPermeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
+interface IPermeator<
+  TInput,
+  TOutput,
+  TPermeateIn = unknown,
+  TPermeateOut = unknown,
+  TAmbient extends PlainLiteralObject = PlainLiteralObject,
+> {
   permeate(
     base: TInput,
     callback: (
       permeate: TInput & TPermeateIn,
     ) => Promise<TOutput | null | undefined>,
     ambient?: TAmbient,
-  ): Promise<(TOutput & TPermeateOut) | TInput>;
+  ): Promise<TOutput & TPermeateOut>;
 }
 ```
 

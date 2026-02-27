@@ -2,6 +2,7 @@
 export { Membrane } from './membrane';
 
 // Classes
+export { ImmutablePermeator } from './immutable-permeator';
 export { Permeator } from './permeator';
 export { CollectionMembrane } from './membranes/collection-membrane';
 export { ObjectMembrane } from './membranes/object-membrane';
@@ -16,7 +17,6 @@ export type {
   PlainLiteralObject,
   PermeateCallback,
   MembraneErrorHandler,
-  PermeatorStrategy,
   PermeatorOptions,
   CollectionMergeStrategy,
   ObjectMergeStrategy,

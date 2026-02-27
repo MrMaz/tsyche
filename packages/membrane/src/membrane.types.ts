@@ -30,15 +30,9 @@ export type ObjectMergeStrategy = 'overwrite' | 'preserve';
 export type CollectionMergeStrategy = 'overwrite' | 'preserve' | 'append';
 
 /**
- * `passthrough`: Permeator returns original base instead of pipeline output.
- */
-export type PermeatorStrategy = 'passthrough';
-
-/**
  * Options for configuring a Permeator.
  */
 export interface PermeatorOptions {
-  strategy?: PermeatorStrategy;
   onError?: MembraneErrorHandler;
 }
 

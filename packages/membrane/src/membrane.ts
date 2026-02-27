@@ -1,3 +1,4 @@
+import { ImmutablePermeator } from './immutable-permeator';
 import {
   PlainLiteralObject,
   IMembrane,
@@ -119,7 +120,7 @@ export class Membrane {
   /**
    * Creates a Permeator wiring input and output membranes into a pipeline.
    */
-  static permeate<
+  static mutable<
     TInput,
     TOutput,
     TPermeateIn = unknown,
@@ -131,5 +132,23 @@ export class Membrane {
     options?: PermeatorOptions,
   ): Permeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
     return new Permeator(input, output, options);
+  }
+
+  /**
+   * Creates an ImmutablePermeator that runs the full pipeline
+   * but always returns the original base unchanged.
+   */
+  static immutable<
+    TInput,
+    TOutput,
+    TPermeateIn = unknown,
+    TPermeateOut = unknown,
+    TAmbient extends PlainLiteralObject = PlainLiteralObject,
+  >(
+    input: IMembrane<TInput, TPermeateIn, TAmbient>,
+    output: IMembrane<TOutput, TPermeateOut, TAmbient>,
+    options?: PermeatorOptions,
+  ): ImmutablePermeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
+    return new ImmutablePermeator(input, output, options);
   }
 }

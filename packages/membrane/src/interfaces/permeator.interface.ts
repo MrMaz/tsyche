@@ -17,5 +17,5 @@ export interface IPermeator<
       permeate: TInput & TPermeateIn,
     ) => Promise<TOutput | null | undefined>,
     ambient?: TAmbient,
-  ): Promise<(TOutput & TPermeateOut) | TInput>;
+  ): Promise<TOutput & TPermeateOut>;
 }

@@ -1,3 +1,4 @@
+import { ImmutablePermeator } from '../immutable-permeator';
 import { Membrane } from '../membrane';
 import { PermeateCallback } from '../membrane.types';
 import { CollectionMembrane } from '../membranes/collection-membrane';
@@ -181,7 +182,7 @@ describe('Membrane factory', () => {
         cb(async (base: any) => base),
         'overwrite',
       );
-      const membrane = Membrane.permeate(before, after);
+      const membrane = Membrane.mutable(before, after);
 
       expect(membrane).toBeInstanceOf(Permeator);
     });
@@ -196,7 +197,7 @@ describe('Membrane factory', () => {
         'overwrite',
       );
 
-      const composed = Membrane.permeate(before, after);
+      const composed = Membrane.mutable(before, after);
       const result = await composed.permeate(
         { name: 'input' },
         async (scoped) => ({
@@ -211,6 +212,42 @@ describe('Membrane factory', () => {
         fromDb: true,
         post: true,
       });
+    });
+  });
+
+  describe('.immutable()', () => {
+    it('should return an ImmutablePermeator instance', () => {
+      const before = new ObjectMembrane(
+        cb(async (base: any) => base),
+        'overwrite',
+      );
+      const after = new ObjectMembrane(
+        cb(async (base: any) => base),
+        'overwrite',
+      );
+      const membrane = Membrane.immutable(before, after);
+
+      expect(membrane).toBeInstanceOf(ImmutablePermeator);
+    });
+
+    it('should return original base unchanged', async () => {
+      const before = Membrane.object(
+        cb(async (base: any) => ({ ...base, enhanced: true })),
+        'overwrite',
+      );
+      const after = Membrane.object(
+        cb(async (base: any) => ({ ...base, post: true })),
+        'overwrite',
+      );
+
+      const composed = Membrane.immutable(before, after);
+      const original = { name: 'input' };
+      const result = await composed.permeate(original, async (scoped) => ({
+        ...scoped,
+        fromDb: true,
+      }));
+
+      expect(result).toBe(original);
     });
   });
 });

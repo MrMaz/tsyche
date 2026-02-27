@@ -8,7 +8,6 @@ import {
 /**
  * Three-step pipeline:
  * input.diffuse(base) → callback(permeate) → output.diffuse(result).
- * When strategy is `'passthrough'`, returns the original base instead.
  */
 export class Permeator<
   TInput,
@@ -29,17 +28,11 @@ export class Permeator<
       permeate: TInput & TPermeateIn,
     ) => Promise<TOutput | null | undefined>,
     ambient?: TAmbient,
-  ): Promise<(TOutput & TPermeateOut) | TInput> {
+  ): Promise<TOutput & TPermeateOut> {
     try {
       const permeate = await this.input.diffuse(base, ambient);
       const callbackResult = await callback(permeate);
-      const final = await this.output.diffuse(callbackResult, ambient);
-
-      if (this.options?.strategy === 'passthrough') {
-        return base;
-      }
-
-      return final;
+      return await this.output.diffuse(callbackResult, ambient);
     } catch (error) {
       if (this.options?.onError) this.options.onError(error);
       throw error;
