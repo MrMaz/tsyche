@@ -1,41 +1,65 @@
 import {
   PlainLiteralObject,
   IMembrane,
-  IPermeator,
   PermeatorOptions,
 } from './membrane.types';
+import { ImmutablePermeator } from './permeators/immutable-permeator';
+import { MutablePermeator } from './permeators/mutable-permeator';
 
 /**
- * Three-step pipeline:
- * input.diffuse(base) → callback(permeate) → output.diffuse(result).
+ * Static factory for creating permeators.
  */
-export class Permeator<
-  TInput,
-  TOutput,
-  TPermeateIn = unknown,
-  TPermeateOut = unknown,
-  TAmbient extends PlainLiteralObject = PlainLiteralObject,
-> implements IPermeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
-  constructor(
-    private readonly input: IMembrane<TInput, TPermeateIn, TAmbient>,
-    private readonly output: IMembrane<TOutput, TPermeateOut, TAmbient>,
-    private readonly options?: PermeatorOptions,
-  ) {}
+export class Permeator {
+  /**
+   * Creates a MutablePermeator wiring input and output membranes into a pipeline.
+   * `TResult` is inferred from the output membrane — when the output is
+   * a `NullableMembrane`, the return type includes `| null`.
+   */
+  static mutable<
+    TInput,
+    TOutput,
+    TPermeateIn = unknown,
+    TPermeateOut = unknown,
+    TAmbient extends PlainLiteralObject = PlainLiteralObject,
+    TResult = TOutput & TPermeateOut,
+  >(
+    input: IMembrane<TInput, TPermeateIn, TAmbient>,
+    output: IMembrane<TOutput, TPermeateOut, TAmbient, TResult>,
+    options?: PermeatorOptions,
+  ): MutablePermeator<
+    TInput,
+    TOutput,
+    TPermeateIn,
+    TPermeateOut,
+    TAmbient,
+    TResult
+  > {
+    return new MutablePermeator(input, output, options);
+  }
 
-  async permeate(
-    base: TInput,
-    callback: (
-      permeate: TInput & TPermeateIn,
-    ) => Promise<TOutput | null | undefined>,
-    ambient?: TAmbient,
-  ): Promise<TOutput & TPermeateOut> {
-    try {
-      const permeate = await this.input.diffuse(base, ambient);
-      const callbackResult = await callback(permeate);
-      return await this.output.diffuse(callbackResult, ambient);
-    } catch (error) {
-      if (this.options?.onError) this.options.onError(error);
-      throw error;
-    }
+  /**
+   * Creates an ImmutablePermeator that runs the full pipeline
+   * but always returns the original base unchanged.
+   */
+  static immutable<
+    TInput,
+    TOutput,
+    TPermeateIn = unknown,
+    TPermeateOut = unknown,
+    TAmbient extends PlainLiteralObject = PlainLiteralObject,
+    TResult = TOutput & TPermeateOut,
+  >(
+    input: IMembrane<TInput, TPermeateIn, TAmbient>,
+    output: IMembrane<TOutput, TPermeateOut, TAmbient, TResult>,
+    options?: PermeatorOptions,
+  ): ImmutablePermeator<
+    TInput,
+    TOutput,
+    TPermeateIn,
+    TPermeateOut,
+    TAmbient,
+    TResult
+  > {
+    return new ImmutablePermeator(input, output, options);
   }
 }

@@ -1,24 +1,22 @@
-import { ImmutablePermeator } from './immutable-permeator';
 import {
   PlainLiteralObject,
   IMembrane,
   PermeateCallback,
-  PermeatorOptions,
   CollectionMergeStrategy,
   ObjectMergeStrategy,
   StreamMergeStrategy,
 } from './membrane.types';
 import { CollectionMembrane } from './membranes/collection-membrane';
+import { NullableMembrane } from './membranes/nullable-membrane';
 import { ObjectMembrane } from './membranes/object-membrane';
 import { ObjectProjectionMembrane } from './membranes/object-projection-membrane';
 import { ProxyMembrane } from './membranes/proxy-membrane';
 import { ScalarMembrane } from './membranes/scalar-membrane';
 import { SequenceMembrane } from './membranes/sequence-membrane';
 import { StreamMembrane } from './membranes/stream-membrane';
-import { Permeator } from './permeator';
 
 /**
- * Static factory for creating membranes and permeators.
+ * Static factory for creating membranes.
  */
 export class Membrane {
   /**
@@ -118,37 +116,16 @@ export class Membrane {
   }
 
   /**
-   * Creates a Permeator wiring input and output membranes into a pipeline.
+   * Wraps a membrane so that `diffuse(null | undefined)` returns `null`
+   * when the callback does not augment the resolved empty value.
    */
-  static mutable<
-    TInput,
-    TOutput,
-    TPermeateIn = unknown,
-    TPermeateOut = unknown,
+  static nullable<
+    TBase,
+    TPermeate = unknown,
     TAmbient extends PlainLiteralObject = PlainLiteralObject,
   >(
-    input: IMembrane<TInput, TPermeateIn, TAmbient>,
-    output: IMembrane<TOutput, TPermeateOut, TAmbient>,
-    options?: PermeatorOptions,
-  ): Permeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
-    return new Permeator(input, output, options);
-  }
-
-  /**
-   * Creates an ImmutablePermeator that runs the full pipeline
-   * but always returns the original base unchanged.
-   */
-  static immutable<
-    TInput,
-    TOutput,
-    TPermeateIn = unknown,
-    TPermeateOut = unknown,
-    TAmbient extends PlainLiteralObject = PlainLiteralObject,
-  >(
-    input: IMembrane<TInput, TPermeateIn, TAmbient>,
-    output: IMembrane<TOutput, TPermeateOut, TAmbient>,
-    options?: PermeatorOptions,
-  ): ImmutablePermeator<TInput, TOutput, TPermeateIn, TPermeateOut, TAmbient> {
-    return new ImmutablePermeator(input, output, options);
+    membrane: IMembrane<TBase, TPermeate, TAmbient>,
+  ): NullableMembrane<TBase, TPermeate, TAmbient> {
+    return new NullableMembrane(membrane);
   }
 }

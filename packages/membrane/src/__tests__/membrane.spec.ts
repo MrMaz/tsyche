@@ -1,14 +1,13 @@
-import { ImmutablePermeator } from '../immutable-permeator';
 import { Membrane } from '../membrane';
 import { PermeateCallback } from '../membrane.types';
 import { CollectionMembrane } from '../membranes/collection-membrane';
+import { NullableMembrane } from '../membranes/nullable-membrane';
 import { ObjectMembrane } from '../membranes/object-membrane';
 import { ObjectProjectionMembrane } from '../membranes/object-projection-membrane';
 import { ProxyMembrane } from '../membranes/proxy-membrane';
 import { ScalarMembrane } from '../membranes/scalar-membrane';
 import { SequenceMembrane } from '../membranes/sequence-membrane';
 import { StreamMembrane } from '../membranes/stream-membrane';
-import { Permeator } from '../permeator';
 
 const cb = (fn: (...args: any[]) => any) =>
   jest.fn(fn) as unknown as jest.Mock & PermeateCallback;
@@ -172,82 +171,15 @@ describe('Membrane factory', () => {
     });
   });
 
-  describe('.permeate()', () => {
-    it('should return a Permeator instance', () => {
-      const before = new ObjectMembrane(
+  describe('.nullable()', () => {
+    it('should return a NullableMembrane instance', () => {
+      const inner = new ObjectMembrane(
         cb(async (base: any) => base),
         'overwrite',
       );
-      const after = new ObjectMembrane(
-        cb(async (base: any) => base),
-        'overwrite',
-      );
-      const membrane = Membrane.mutable(before, after);
+      const membrane = Membrane.nullable(inner);
 
-      expect(membrane).toBeInstanceOf(Permeator);
-    });
-
-    it('should run the before → callback → after pipeline', async () => {
-      const before = Membrane.object(
-        cb(async (base: any) => ({ ...base, enhanced: true })),
-        'overwrite',
-      );
-      const after = Membrane.object(
-        cb(async (base: any) => ({ ...base, post: true })),
-        'overwrite',
-      );
-
-      const composed = Membrane.mutable(before, after);
-      const result = await composed.permeate(
-        { name: 'input' },
-        async (scoped) => ({
-          ...scoped,
-          fromDb: true,
-        }),
-      );
-
-      expect(result).toEqual({
-        name: 'input',
-        enhanced: true,
-        fromDb: true,
-        post: true,
-      });
-    });
-  });
-
-  describe('.immutable()', () => {
-    it('should return an ImmutablePermeator instance', () => {
-      const before = new ObjectMembrane(
-        cb(async (base: any) => base),
-        'overwrite',
-      );
-      const after = new ObjectMembrane(
-        cb(async (base: any) => base),
-        'overwrite',
-      );
-      const membrane = Membrane.immutable(before, after);
-
-      expect(membrane).toBeInstanceOf(ImmutablePermeator);
-    });
-
-    it('should return original base unchanged', async () => {
-      const before = Membrane.object(
-        cb(async (base: any) => ({ ...base, enhanced: true })),
-        'overwrite',
-      );
-      const after = Membrane.object(
-        cb(async (base: any) => ({ ...base, post: true })),
-        'overwrite',
-      );
-
-      const composed = Membrane.immutable(before, after);
-      const original = { name: 'input' };
-      const result = await composed.permeate(original, async (scoped) => ({
-        ...scoped,
-        fromDb: true,
-      }));
-
-      expect(result).toBe(original);
+      expect(membrane).toBeInstanceOf(NullableMembrane);
     });
   });
 });

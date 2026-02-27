@@ -2,8 +2,9 @@ import {
   PlainLiteralObject,
   IMembrane,
   PermeatorOptions,
-} from './membrane.types';
-import { Permeator } from './permeator';
+} from '../membrane.types';
+
+import { MutablePermeator } from './mutable-permeator';
 
 /**
  * Runs the full input → callback → output pipeline but always
@@ -17,21 +18,23 @@ export class ImmutablePermeator<
   TPermeateIn = unknown,
   TPermeateOut = unknown,
   TAmbient extends PlainLiteralObject = PlainLiteralObject,
+  TResult = TOutput & TPermeateOut,
 > {
-  private readonly inner: Permeator<
+  private readonly inner: MutablePermeator<
     TInput,
     TOutput,
     TPermeateIn,
     TPermeateOut,
-    TAmbient
+    TAmbient,
+    TResult
   >;
 
   constructor(
     input: IMembrane<TInput, TPermeateIn, TAmbient>,
-    output: IMembrane<TOutput, TPermeateOut, TAmbient>,
+    output: IMembrane<TOutput, TPermeateOut, TAmbient, TResult>,
     options?: PermeatorOptions,
   ) {
-    this.inner = new Permeator(input, output, options);
+    this.inner = new MutablePermeator(input, output, options);
   }
 
   async permeate(

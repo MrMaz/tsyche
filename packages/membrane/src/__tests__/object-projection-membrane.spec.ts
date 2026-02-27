@@ -1,7 +1,7 @@
-import { ImmutablePermeator } from '../immutable-permeator';
 import { PermeateCallback } from '../membrane.types';
 import { ObjectMembrane } from '../membranes/object-membrane';
 import { ObjectProjectionMembrane } from '../membranes/object-projection-membrane';
+import { ImmutablePermeator } from '../permeators/immutable-permeator';
 
 const cb = (fn: (...args: any[]) => any) =>
   jest.fn(fn) as unknown as jest.Mock & PermeateCallback;

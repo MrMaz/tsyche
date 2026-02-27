@@ -33,7 +33,7 @@ pnpm add @tsyche/membrane
 ## Quick Start
 
 ```typescript
-import { Membrane } from '@tsyche/membrane';
+import { Membrane, Permeator } from '@tsyche/membrane';
 
 // Create membranes for input enrichment and output post-processing
 const input = Membrane.object(
@@ -46,7 +46,7 @@ const output = Membrane.object(
 );
 
 // Wire them into a permeator
-const permeator = Membrane.mutable(input, output);
+const permeator = Permeator.mutable(input, output);
 
 const result = await permeator.permeate({ userId: '123' }, async (scoped) => {
   // scoped has { userId: '123', timestamp: ... }
@@ -287,17 +287,66 @@ membrane.nullish(undefined); // => {}
 membrane.nullish({ id: 1 }); // => { id: 1 }
 ```
 
+### NullableMembrane
+
+Wraps any membrane so that `diffuse(null | undefined)`
+returns `null` when the callback does not augment the
+resolved empty value. When the callback enriches the empty
+value, the enriched result is returned normally. Non-null
+base values always delegate to the inner membrane.
+
+Use `Membrane.nullable()` to opt in. This is especially
+useful as a Permeator output membrane when the callback may
+return `null` (e.g. `findOne()`) and you want `null` to flow
+through instead of being converted to `{}`.
+
+```typescript
+// Standalone usage
+const membrane = Membrane.nullable(
+  Membrane.object(async (base) => base, 'overwrite'),
+);
+await membrane.diffuse(null);
+// => null (callback did not augment)
+```
+
+```typescript
+// Augmenting callback still returns enriched result
+const membrane = Membrane.nullable(
+  Membrane.object(async (base) => ({ ...base, loaded: true }), 'overwrite'),
+);
+await membrane.diffuse(null);
+// => { loaded: true }
+```
+
+```typescript
+// As Permeator output — null flows through from callback
+const input = Membrane.object(async (base) => base, 'overwrite');
+const output = Membrane.nullable(
+  Membrane.object(async (base) => base, 'overwrite'),
+);
+
+const permeator = Permeator.mutable(input, output);
+
+const result = await permeator.permeate(
+  { id: '1' },
+  async () => null, // e.g. findOne() returns null
+);
+// => null
+```
+
 ## Permeator
 
 Orchestrates a three-step pipeline:
 input.diffuse(base) → callback(permeate) → output.diffuse(result).
 
-Use `Membrane.mutable()` when the pipeline output replaces
-the original base. Use `Membrane.immutable()` when the
+Use `Permeator.mutable()` when the pipeline output replaces
+the original base. Use `Permeator.immutable()` when the
 pipeline runs for side-effects and the original base is
 returned unchanged.
 
 ```typescript
+import { Membrane, Permeator } from '@tsyche/membrane';
+
 const input = Membrane.object(
   async (base) => ({ ...base, enriched: true }),
   'overwrite',
@@ -307,7 +356,7 @@ const output = Membrane.object(
   'overwrite',
 );
 
-const permeator = Membrane.mutable(input, output);
+const permeator = Permeator.mutable(input, output);
 
 const result = await permeator.permeate({ name: 'input' }, async (scoped) => {
   // scoped = { name: 'input', enriched: true }
@@ -328,7 +377,7 @@ class DomainError extends Error {
   }
 }
 
-const permeator = Membrane.mutable(input, output, {
+const permeator = Permeator.mutable(input, output, {
   onError: (error) => {
     throw new DomainError(error);
   },
@@ -361,7 +410,7 @@ const input = Membrane.object(
 const output = Membrane.object(async (base) => base, 'overwrite');
 
 // immutable returns original base from permeate()
-const permeator = Membrane.immutable(input, output);
+const permeator = Permeator.immutable(input, output);
 
 // domain aggregate (business data)
 const aggregate = { id: '1', name: 'Alice', total: 100 };
@@ -400,7 +449,7 @@ const output = Membrane.object(
   'overwrite',
 );
 
-const permeator = Membrane.mutable(input, output);
+const permeator = Permeator.mutable(input, output);
 
 const result = await permeator.permeate({ name: 'input' }, async (scoped) => {
   // scoped = { name: 'input', validated: true, normalized: true }
@@ -424,7 +473,7 @@ const input = Membrane.object(
 );
 const output = Membrane.object(async (base) => base, 'overwrite');
 
-const permeator = Membrane.mutable(input, output);
+const permeator = Permeator.mutable(input, output);
 
 const result = await permeator.permeate(
   { name: 'input' },
@@ -444,7 +493,7 @@ CollectionMembrane handles the output.
 const input = Membrane.object(async (base) => base, 'overwrite');
 const output = Membrane.collection(async (base) => base, 'overwrite');
 
-const permeator = Membrane.mutable(input, output);
+const permeator = Permeator.mutable(input, output);
 
 const result = await permeator.permeate({ take: 10 }, async () => [
   { id: 1 },
@@ -455,7 +504,7 @@ const result = await permeator.permeate({ take: 10 }, async () => [
 
 ## API Reference
 
-### Factory Methods
+### Membrane Factory
 
 | Method                                           | Returns                    | Strategies                              | Default      |
 | ------------------------------------------------ | -------------------------- | --------------------------------------- | ------------ |
@@ -466,8 +515,14 @@ const result = await permeator.permeate({ take: 10 }, async () => [
 | `Membrane.proxy(callback)`                       | `ProxyMembrane`            |                                         |              |
 | `Membrane.scalar(callback)`                      | `ScalarMembrane`           |                                         |              |
 | `Membrane.stream(callback, strategy?)`           | `StreamMembrane`           | `'overwrite' \| 'preserve'`             | `'preserve'` |
-| `Membrane.mutable(input, output, options?)`      | `Permeator`                |                                         |              |
-| `Membrane.immutable(input, output, options?)`    | `ImmutablePermeator`       |                                         |              |
+| `Membrane.nullable(membrane)`                    | `NullableMembrane`         |                                         |              |
+
+### Permeator Factory
+
+| Method                                         | Returns              |
+| ---------------------------------------------- | -------------------- |
+| `Permeator.mutable(input, output, options?)`   | `MutablePermeator`   |
+| `Permeator.immutable(input, output, options?)` | `ImmutablePermeator` |
 
 ### Types
 
@@ -496,12 +551,10 @@ interface IMembrane<
   TBase,
   TPermeate = unknown,
   TAmbient extends PlainLiteralObject = PlainLiteralObject,
+  TResult = TBase & TPermeate,
 > {
   nullish(value: TBase | null | undefined): TBase;
-  diffuse(
-    base: TBase | null | undefined,
-    ambient?: TAmbient,
-  ): Promise<TBase & TPermeate>;
+  diffuse(base: TBase | null | undefined, ambient?: TAmbient): Promise<TResult>;
 }
 
 interface IPermeator<
@@ -510,6 +563,7 @@ interface IPermeator<
   TPermeateIn = unknown,
   TPermeateOut = unknown,
   TAmbient extends PlainLiteralObject = PlainLiteralObject,
+  TResult = TOutput & TPermeateOut,
 > {
   permeate(
     base: TInput,
@@ -517,7 +571,7 @@ interface IPermeator<
       permeate: TInput & TPermeateIn,
     ) => Promise<TOutput | null | undefined>,
     ambient?: TAmbient,
-  ): Promise<TOutput & TPermeateOut>;
+  ): Promise<TResult>;
 }
 ```
 

@@ -3,12 +3,12 @@ import { CollectionMembrane } from '../membranes/collection-membrane';
 import { ObjectMembrane } from '../membranes/object-membrane';
 import { ScalarMembrane } from '../membranes/scalar-membrane';
 import { SequenceMembrane } from '../membranes/sequence-membrane';
-import { Permeator } from '../permeator';
+import { MutablePermeator } from '../permeators/mutable-permeator';
 
 const cb = (fn: (...args: any[]) => any) =>
   jest.fn(fn) as unknown as jest.Mock & PermeateCallback;
 
-describe('Permeator', () => {
+describe('MutablePermeator', () => {
   it('should run before → callback → after pipeline', async () => {
     const order: string[] = [];
 
@@ -28,7 +28,7 @@ describe('Permeator', () => {
       'overwrite',
     );
 
-    const composed = new Permeator(before, after);
+    const composed = new MutablePermeator(before, after);
 
     const result = await composed.permeate(
       { name: 'input' },
@@ -58,7 +58,7 @@ describe('Permeator', () => {
       'overwrite',
     );
 
-    const composed = new Permeator(before, after);
+    const composed = new MutablePermeator(before, after);
 
     const result = await composed.permeate({ take: 10 }, async () => [
       { id: 1 },
@@ -90,7 +90,7 @@ describe('Permeator', () => {
       [],
     );
 
-    const composed = new Permeator(beforeSeq, afterSeq);
+    const composed = new MutablePermeator(beforeSeq, afterSeq);
 
     const result = await composed.permeate(
       { name: 'input' },
@@ -133,7 +133,7 @@ describe('Permeator', () => {
         throw new CustomError(error);
       };
 
-      const composed = new Permeator(before, after, { onError });
+      const composed = new MutablePermeator(before, after, { onError });
 
       await expect(
         composed.permeate({ name: 'input' }, async (scoped) => scoped),
@@ -155,7 +155,7 @@ describe('Permeator', () => {
         throw error;
       });
 
-      const composed = new Permeator(before, after, { onError });
+      const composed = new MutablePermeator(before, after, { onError });
 
       await expect(
         composed.permeate({ name: 'input' }, async () => {
@@ -179,7 +179,7 @@ describe('Permeator', () => {
         'overwrite',
       );
 
-      const composed = new Permeator(before, after);
+      const composed = new MutablePermeator(before, after);
 
       await expect(
         composed.permeate({ name: 'input' }, async (scoped) => scoped),
@@ -194,7 +194,7 @@ describe('Permeator', () => {
       );
       const after = new ScalarMembrane(async (base: string) => base);
 
-      const composed = new Permeator(before, after);
+      const composed = new MutablePermeator(before, after);
 
       const result = await composed.permeate(
         'hello',
@@ -214,7 +214,7 @@ describe('Permeator', () => {
         'overwrite',
       );
 
-      const composed = new Permeator(before, after);
+      const composed = new MutablePermeator(before, after);
 
       const result = await composed.permeate(
         { name: 'test' },
@@ -236,7 +236,7 @@ describe('Permeator', () => {
         'overwrite',
       );
 
-      const composed = new Permeator(before, after);
+      const composed = new MutablePermeator(before, after);
       const result = await composed.permeate({ id: '1' }, async () => null);
 
       expect(result).toEqual({ postProcessed: true });
@@ -252,7 +252,7 @@ describe('Permeator', () => {
         'overwrite',
       );
 
-      const composed = new Permeator(before, after);
+      const composed = new MutablePermeator(before, after);
       const result = await composed.permeate(
         { id: '1' },
         async () => undefined,
@@ -267,7 +267,7 @@ describe('Permeator', () => {
       const beforeCb = cb(async (base: any) => base);
       const afterCb = cb(async (base: any) => base);
 
-      const composed = new Permeator(
+      const composed = new MutablePermeator(
         new ObjectMembrane(beforeCb, 'overwrite'),
         new ObjectMembrane(afterCb, 'overwrite'),
       );
